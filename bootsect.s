@@ -40,8 +40,8 @@
 	.equ SYSSEG, 0x1000		# system loaded at 0x10000 (65536).
 	.equ ENDSEG, SYSSEG + SYSSIZE	# where to stop loading
 
-#	.equ HD,0x00
-	.equ HD,0x80
+	.equ HD,0x00
+#	.equ HD,0x80
 
 # ROOT_DEV:	0x000 - same type of floppy as boot.
 #		0x301 - first partition on first drive etc

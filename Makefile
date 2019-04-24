@@ -1,4 +1,4 @@
-all: los.img usb start
+all: los.img
 
 los.img: bootsect setup kernel
 	cat bootsect > los.img
@@ -33,4 +33,4 @@ clean:
 usb:
 	sudo dd if=./los.img of=/dev/sdb bs=512 count=300
 start:
-	qemu-system-i386 los.img
+	qemu-system-i386 -fda los.img
