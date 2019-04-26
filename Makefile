@@ -1,4 +1,9 @@
-all: los.img
+#all: los.img
+all: minimal
+minimal: minimal.os
+	as --32 -o minimal.o minimal.os
+	ld -m elf_i386 -Ttext 0 -o minimal.bin minimal.o
+	objcopy --dump-section .text=minimal minimal.bin
 
 los.img: bootsect setup kernel
 	cat bootsect > los.img
@@ -29,7 +34,7 @@ head.o: head.s
 	as --32 -o head.o head.s
 
 clean:
-	rm -f bootsect setup kernel *.o *.bin *.tmp *.img
+	rm -f bootsect setup kernel minimal *.o *.bin *.tmp *.img
 usb:
 	sudo dd if=./los.img of=/dev/sdb bs=512 count=300
 start:

@@ -21,11 +21,32 @@ go:	mov	%cs, %ax		#将ds，es，ss都设置成移动后代码所在的段处(0x9
 
 	mov	$0xFF00, %sp		# arbitrary value >>512
 	
-	mov	$'A',%ah
-	mov	$'A',%al
+	mov	$'I',%ah
+	mov	$'1',%al
 	call	print_debug
+
+	mov	$0x08,%ah
+	mov	$HD,%dl
+	int	$0x13
+	jc	bad_read_disk_param
+	mov	$0x0,%ah
+	mov	%dl,%al
+	call	print_hex
+	call	print_nl
+	mov	%cx,%ax
+	call	print_hex
+	call	print_nl
+	jmp 	loop
+
+bad_read_disk_param:
+	mov	$'E',%ah
+	mov	$'1',%al
+	call	print_debug
+	jmp 	loop
+	
 loop:
 	jmp 	loop
+
 
 print_debug:
 	mov 	%ax,%dx
