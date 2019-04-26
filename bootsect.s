@@ -40,8 +40,8 @@
 	.equ SYSSEG, 0x1000		# system loaded at 0x10000 (65536).
 	.equ ENDSEG, SYSSEG + SYSSIZE	# where to stop loading
 
-	.equ HD,0x00
-#	.equ HD,0x80
+#	.equ HD,0x00
+	.equ HD,0x80
 
 # ROOT_DEV:	0x000 - same type of floppy as boot.
 #		0x301 - first partition on first drive etc
@@ -67,6 +67,11 @@ go:	mov	%cs, %ax		#将ds，es，ss都设置成移动后代码所在的段处(0x9
 # put stack at 0x9ff00.
 	mov	%ax, %ss
 	mov	$0xFF00, %sp		# arbitrary value >>512
+	
+	mov	$0x0e,%ah
+	mov	$'B',%al
+	int	$0x10
+	call	print_nl
 
 # load the setup-sectors directly after the bootblock.
 # Note that 'es' is already set up.
@@ -78,7 +83,7 @@ go:	mov	%cs, %ax		#将ds，es，ss都设置成移动后代码所在的段处(0x9
 ##es:bx ->指向数据缓冲区；如果出错则CF标志置位,ah中是出错码
 #
 load_setup:
-    mov $HD,%dl
+    	mov 	$HD,%dl
 	mov	$0x00, %dh		# drive 0, head 0
 	mov	$0x0002, %cx		# sector 2, track 0
 	mov	$0x0200, %bx		# address = 512, in INITSEG
@@ -89,11 +94,27 @@ load_setup:
 	mov	$0x0000, %dx
 	mov	$0x0000, %ax		# reset the diskette
 	int	$0x13
+
+	mov	$0x0e,%ah
+	mov	$'E',%al
+	int	$0x10
+	mov	$':',%al
+	int	$0x10
+	mov	$HD,%ax
+	call	print_hex
+	call	print_nl
+	hlt
 	jmp	load_setup
 
 ok_load_setup:
 
 # Get disk drive parameters, specifically nr of sectors/track
+	mov	%es:0x200,%ax
+	call	print_hex
+	call	print_nl
+	mov	%es:0x202,%ax
+	call	print_hex
+	call	print_nl
 
 	mov	$HD, %dl
 	mov	$0x0800, %ax		# AH=8 is get drive parameters
@@ -122,8 +143,22 @@ ok_load_setup:
 
 	mov	$SYSSEG, %ax
 	mov	%ax, %es		# segment of 0x010000
+	mov	$0x0e,%ah
+	mov	$'P',%al
+	int	$0x10
 	call	read_it
 	call	kill_motor
+
+
+
+	mov	$SYSSEG,%ax
+	mov 	%ax,%es	
+	mov	%es:0x0,%ax
+	call	print_hex
+	call	print_nl
+	mov	%es:0x2,%ax
+	call	print_hex
+	call	print_nl
 
 # After that we check which root-device to use. If the device is
 # defined (#= 0), nothing is done and the given device is used.
@@ -233,7 +268,13 @@ read_track:
 	pop	%bx
 	pop	%ax
 	ret
-bad_rt:	mov	$0, %ax
+bad_rt:	
+
+	mov	$0x0e,%ah
+	mov	$'T',%al
+	int	$0x10
+
+	mov	$0, %ax
 	mov	$0, %dx
 	int	$0x13
 	pop	%dx
@@ -254,6 +295,31 @@ kill_motor:
 	outsb
 	pop	%dx
 	ret
+
+print_hex:
+        mov $4,%cx
+        mov %ax,%dx
+
+print_digit:
+        rol $4,%dx      #循环以使低4位用上，高4位移至低4位
+        mov $0xe0f,%ax #ah ＝ 请求的功能值，al = 半个字节的掩码
+        and %dl,%al
+        add $0x30,%al
+        cmp $0x3a,%al
+        jl outp
+        add $0x07,%al
+
+outp:
+        int $0x10
+        loop print_digit
+        ret
+#打印回车换行
+print_nl:
+        mov $0xe0d,%ax
+        int $0x10
+        mov $0xa,%al
+        int $0x10
+        ret
 
 sectors:
 	.word 0
