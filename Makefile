@@ -36,6 +36,7 @@ head.o: head.s
 clean:
 	rm -f bootsect setup kernel minimal *.o *.bin *.tmp *.img
 usb:
-	sudo dd if=./los.img of=/dev/sdb bs=512 count=300
+	#sudo dd if=./los.img of=/dev/sdb bs=512 count=300
+	sudo dd if=./minimal of=/dev/sda bs=512 count=300
 start:
 	qemu-system-i386 -fda los.img

@@ -26,37 +26,14 @@ go:	mov	%cs, %ax		#将ds，es，ss都设置成移动后代码所在的段处(0x9
 	mov	$0x08,%ah
 	mov	HD,%dl
 	int	$0x13
-	jc	bad_read_disk
+	jc	bad_read_disk_param
 	mov	$0x0,%ah
 	mov	%dl,%al
 	call	print_hex
 	call	print_nl
-	
-	mov	HD,%dl
-	mov 	$0x0,%dh
-	mov	$0x0,%ah
-	int	$0x13
-	mov	$'A',%al
-	call	print_hex
-	call	print_nl
-
-	mov	$0x02,%ah
-	mov	$0x01,%al
-	mov	$0x0,%ch
-	mov	$0x02,%cl
-	mov     $0x0200, %bx
-	mov	HD,%dl
-	mov 	$0x0,%dh
-        int     $0x13                   # read it
-        jnc     ok_load_setup           # ok - continue
-	call	print_hex
-	call	print_nl
-	jmp	bad_read_disk
-
-ok_load_setup:
 	jmp 	loop
 
-bad_read_disk:
+bad_read_disk_param:
         mov     $0xe,%ah
         mov     $'E',%al
         int     $0x10
