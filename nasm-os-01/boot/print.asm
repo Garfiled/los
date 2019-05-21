@@ -1,5 +1,5 @@
 print:
-   ; pusha
+   pusha
 
 ; keep this in mind:
 ; while (string[i] != 0) { print string[i]; i++ }
@@ -19,13 +19,13 @@ start:
     jmp start
 
 done:
-    ;popa
+    popa
     ret
 
 
 
 print_nl:
-    ;pusha
+    pusha
     
     mov ah, 0x0e
     mov al, 0x0a ; newline char
@@ -33,5 +33,5 @@ print_nl:
     mov al, 0x0d ; carriage return
     int 0x10
     
-    ;popa
+    popa
     ret
