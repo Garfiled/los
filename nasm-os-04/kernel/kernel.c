@@ -82,7 +82,7 @@ void print_hd() {
 }
 
 void user_input(char *input) {
-    if (strcmp(input, "END") == 0) {
+    if (strcmp(input, "exit") == 0) {
         kprint("Stopping the CPU. Bye!\n");
         asm volatile("hlt");
     } else if (strcmp(input, "PAGE") == 0) {
@@ -98,9 +98,9 @@ void user_input(char *input) {
         kprint(", physical address: ");
         kprint(phys_str);
         kprint("\n");
-    } else if (strcmp(input,"LSHD")==0) {
+    } else if (strcmp(input,"lshd")==0) {
 		print_hd();
-	} else if (strcmp(input,"READHD")==0) {
+	} else if (strcmp(input,"readhd")==0) {
 		hd_rw(37,HD_READ,1,(void*)(0x9200));
 		kprint_k((char*)0x9200,10);
 		
