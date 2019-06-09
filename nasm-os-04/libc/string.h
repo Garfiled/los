@@ -8,5 +8,7 @@ int strlen(char s[]);
 void backspace(char s[]);
 void append(char s[], char n);
 int strcmp(char s1[], char s2[]);
+int strcmpN(char s1[], char s2[],int n);
+int atoi(char s[]);
 
 #endif

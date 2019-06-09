@@ -3,6 +3,8 @@
 
 void init_hd();
 void hd_rw(uint32_t,uint8_t, uint16_t,void *);
+void check_hd_status();
+void reset_hd_controller();
 
 //  LBS request address
 #define HD_PORT_DATA            0x1f0

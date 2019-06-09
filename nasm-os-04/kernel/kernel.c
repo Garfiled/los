@@ -7,6 +7,8 @@
 #include "../drivers/hd.h"
 
 
+extern uint32_t tick;
+
 #define HD_NUM 2
 #define SYSTEM_PARAM_ADDR 0x9000
 
@@ -80,6 +82,52 @@ void print_hd() {
 	}
 
 }
+void print_mem(char s[])
+{
+	kprint("mem.");
+	int mem = atoi(s);
+	char mem_str[10];
+	int_to_ascii(mem,mem_str);
+	kprint(mem_str);
+	kprint(":");
+	kprint_k((char*)mem,10);
+	kprint("\n");
+	kprint("ascii:");
+	char tmp_str[10];
+	for (int i=0;i<10;i++)
+	{
+		int_to_ascii(((unsigned char*)mem)[i],tmp_str);
+		kprint(tmp_str);
+		kprint(" ");
+	}
+	kprint("\n");
+	kprint("hex:");
+	for (int i=0;i<10;i++)
+	{
+		tmp_str[0] = 0;
+		hex_to_ascii(((unsigned char*)mem)[i],tmp_str);
+		kprint(tmp_str);
+		kprint(" ");
+	}
+	kprint("\n");
+}
+
+void read_hd(char s[])
+{	
+	int start_sector = atoi(s);
+	char start_sector_str[10];
+	int_to_ascii(start_sector,start_sector_str);
+	kprint(start_sector_str);
+	kprint("\n");
+	uint32_t start_tick = tick;
+	hd_rw(start_sector,HD_READ,1,(void*)(0x9200));
+	uint32_t end_tick = tick;
+	char tick_use_str[10];
+	int_to_ascii(end_tick-start_tick, tick_use_str);
+	kprint(tick_use_str);
+	kprint("\n");
+}
+
 
 void user_input(char *input) {
     if (strcmp(input, "exit") == 0) {
@@ -100,10 +148,14 @@ void user_input(char *input) {
         kprint("\n");
     } else if (strcmp(input,"lshd")==0) {
 		print_hd();
-	} else if (strcmp(input,"readhd")==0) {
-		hd_rw(37,HD_READ,1,(void*)(0x9200));
-		kprint_k((char*)0x9200,10);
-		
+	} else if (strcmpN(input,"readhd",6)==0) {
+		read_hd(input+7);
+	} else if (strcmpN(input, "checkhd",7)==0) {
+		check_hd_status();
+	} else if (strcmpN(input,"resethd",7)==0) {
+		reset_hd_controller();
+	} else if (strcmpN(input,"lsmem",5)==0) {
+		print_mem(input+6);
 	}
     kprint("You said: ");
     kprint(input);
