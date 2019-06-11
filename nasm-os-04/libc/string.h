@@ -10,5 +10,6 @@ void append(char s[], char n);
 int strcmp(char s1[], char s2[]);
 int strcmpN(char s1[], char s2[],int n);
 int atoi(char s[]);
+void kprintInt(int);
 
 #endif

@@ -2,9 +2,10 @@
 #define _HD_H
 
 void init_hd();
+static int hd_wait(int);
 void hd_rw(uint32_t,uint8_t, uint16_t,void *);
 void check_hd_status();
-void reset_hd_controller();
+
 
 //  LBS request address
 #define HD_PORT_DATA            0x1f0
@@ -18,6 +19,11 @@ void reset_hd_controller();
 #define HD_PORT_COMMAND         0x1f7
 #define HD_READ                 0x20
 #define HD_WRITE                0x30
+
+#define HD_BSY       0x80
+#define HD_DRDY      0x40
+#define HD_DF        0x20
+#define HD_ERR       0x01
 
 #define port_read(port,buf,nr) \
 __asm__("cld;rep;insw"::"d" (port),"D" (buf),"c" (nr))

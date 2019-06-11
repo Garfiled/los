@@ -121,3 +121,9 @@ int atoi(char* str)
     // Return result with sign 
     return sign * res; 
 }
+
+void kprintInt(int a) {
+    char str[10];
+    int_to_ascii(a,str);
+    kprint(str);
+}

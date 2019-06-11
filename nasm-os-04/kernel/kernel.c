@@ -152,8 +152,6 @@ void user_input(char *input) {
 		read_hd(input+7);
 	} else if (strcmpN(input, "checkhd",7)==0) {
 		check_hd_status();
-	} else if (strcmpN(input,"resethd",7)==0) {
-		reset_hd_controller();
 	} else if (strcmpN(input,"lsmem",5)==0) {
 		print_mem(input+6);
 	}
