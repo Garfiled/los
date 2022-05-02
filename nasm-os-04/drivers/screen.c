@@ -1,6 +1,7 @@
 #include "screen.h"
 #include "../cpu/ports.h"
 #include "../libc/mem.h"
+#include "../libc/string.h"
 #include <stdint.h>
 
 /* Declaration of private functions */
@@ -66,7 +67,34 @@ void kprint_backspace() {
     print_char(0x08, col, row, WHITE_ON_BLACK);
 }
 
+void kprint_int(int val)
+{
+  char buf[20];
+  int_to_ascii(val, buf);
+  kprint(buf);
+}
 
+void kprint_hex(char *message)
+{
+  char buf[4];
+  int i = 0;
+  while (message[i] != 0) {
+    _itoa(message[i], buf, 16);
+    kprint(buf);
+    i++;
+  }
+}
+
+void kprint_hex_n(char *message, int n)
+{
+  char buf[4];
+  int i = 0;
+  while (i < n) {
+    _itoa(((unsigned char*)message)[i], buf, 16);
+    kprint(buf);
+    i++;
+  }
+}
 /**********************************************************
  * Private kernel functions                               *
  **********************************************************/

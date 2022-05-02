@@ -17,6 +17,7 @@ struct hd_request
 static struct hd_request curr_hd_request;
 
 static void hd_interrupt(registers_t *regs) {
+  UNUSED(regs);
 	kprint("hd_interrupt:\n");
 	kprint("check_status>>>");
 	kprint("\n");
@@ -41,10 +42,8 @@ static void hd_interrupt(registers_t *regs) {
 	}
 	
 	kprint("content:");
-	kprint_k((char*)curr_hd_request.buf,10);
+	kprint_hex_n((char*)curr_hd_request.buf,10);
 	kprint("\n");
-
-    UNUSED(regs);
 }
 
 void init_hd(uint32_t freq) {

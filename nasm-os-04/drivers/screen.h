@@ -17,5 +17,8 @@ void kprint_at(char *message, int col, int row);
 void kprint_k(char *message, int k);
 void kprint(char *message);
 void kprint_backspace();
+void kprint_int(int val);
+void kprint_hex(char *message);
+void kprint_hex_n(char *message, int n);
 
 #endif

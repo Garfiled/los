@@ -3,9 +3,9 @@
 #include "kernel.h"
 #include "../libc/string.h"
 #include "../libc/mem.h"
-#include <stdint.h>
 #include "../drivers/hd.h"
 
+#include <stdint.h>
 
 extern uint32_t tick;
 
@@ -16,8 +16,11 @@ char hd_num = 0;
 struct HD hd[HD_NUM];
 
 void* hd_setup(void* addr) {
-	hd_num = *((char*)addr);
   kprint("hd_setup\n");
+	hd_num = *((char*)addr);
+  kprint("hd_num:");
+  kprint_int(hd_num);
+  kprint("\n");
 	addr++;
 
 	for (int i=0;i<hd_num;i++)

@@ -4,13 +4,24 @@
 /**
  * K&R implementation
  */
-void int_to_ascii(int n, char str[]) {
+
+void int_to_ascii(int n, char str[])
+{
+  _itoa(n, str, 10);
+}
+
+void _itoa(int n, char str[], int radix) {
     int i, sign;
     if ((sign = n) < 0) n = -n;
     i = 0;
     do {
-        str[i++] = n % 10 + '0';
-    } while ((n /= 10) > 0);
+        int aa = n % radix;
+        if (aa <= 9) {
+          str[i++] = aa + '0';
+        } else {
+          str[i++] = aa - 10 + 'A';
+        }
+    } while ((n /= radix) > 0);
 
     if (sign < 0) str[i++] = '-'; 
     str[i] = '\0';
