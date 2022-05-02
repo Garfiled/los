@@ -18,32 +18,28 @@ static struct hd_request curr_hd_request;
 
 static void hd_interrupt(registers_t *regs) {
   UNUSED(regs);
-	kprint("hd_interrupt:\n");
-	kprint("check_status>>>");
-	kprint("\n");
+  kprint("\n");
+	kprint("hd_interrupt ");
 	uint8_t status = port_byte_in(HD_PORT_STATUS);
 	kprint("status:");
-	char status_str[10];
-	int_to_ascii(status,status_str);
-	kprint(status_str);
+	kprint_int(status);
 	kprint("\n");
 
-	kprint("port_read/write>>>");
-	kprint("\n");
+  if (curr_hd_request.cmd == HD_READ) {
+    kprint("port_read finish>\n");
+  } else if (curr_hd_request.cmd == HD_WRITE) {
+    kprint("port_write finish>\n");
+  }
 	//读取数据
-	if (curr_hd_request.cmd == HD_READ)
-	{
-		port_read(HD_PORT_DATA,curr_hd_request.buf, curr_hd_request.nsects * 256);
+	if (curr_hd_request.cmd == HD_READ) {
+	  kprint("read from hd: ");
+	  kprint_hex_n((char*)curr_hd_request.buf, 10);
+	  kprint("\n");
 	}
 	//写入数据
-	else if (curr_hd_request.cmd == HD_WRITE)
-	{
-		port_write(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
+	else if (curr_hd_request.cmd == HD_WRITE) {
 	}
-	
-	kprint("content:");
-	kprint_hex_n((char*)curr_hd_request.buf,10);
-	kprint("\n");
+  kprint(">");
 }
 
 void init_hd(uint32_t freq) {
@@ -65,42 +61,22 @@ void init_hd(uint32_t freq) {
 #define HD_CURRENT	0x1f6	/* 101dhhhh , d=drive, hhhh=head */
 #define HD_STATUS	0x1f7	/* see status-bits */
 #define HD_CMD		0x3f6
-/*
-static int controller_ready(void)
-{
-	int retries=100000;
 
-	while (--retries && (port_byte_in(HD_STATUS)&0x80));
-	return (retries);
+void hd_wait_ready()
+{
+	while ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40) {
+	}
 }
 
-static void hd_out(unsigned int drive,unsigned int nsect,unsigned int sect,
-		unsigned int head,unsigned int cyl,unsigned int cmd,
-		void (*intr_addr)(void))
+void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
 {
-
-    register int port asm("dx");
-	if (!controller_ready()) {
-		kprint("HD controller not ready!");
-		return;
-    }
-	do_hd = intr_addr;
-	port_byte_out(hd_info[drive].ctl,HD_CMD);
-	port=HD_DATA;
-	port_byte_out(hd_info[drive].wpcom>>2,++port);
-	port_byte_out(nsect,++port);
-	port_byte_out(sect,++port);
-	port_byte_out(cyl,++port);
-	port_byte_out(cyl>>8,++port);
-	port_byte_out(0xA0|(drive<<4)|head,++port);
-	outb(cmd,++port);
-}
-*/
-
-void hd_rw(uint32_t lba,uint8_t  cmd, uint16_t nsects,void *buf)
-{
-	kprint("hd_rw>>>");
-	kprint("\n");
+  /*
+	uint8_t hd_status = port_byte_in(HD_PORT_STATUS);
+  kprint("hd_status: ");
+  kprint_int(hd_status);
+  kprint("\n");
+  */
+  hd_wait_ready();
 	curr_hd_request.lba = lba;
 	curr_hd_request.cmd = cmd;
 	curr_hd_request.nsects = nsects;
@@ -122,22 +98,27 @@ void hd_rw(uint32_t lba,uint8_t  cmd, uint16_t nsects,void *buf)
 	port_byte_out(HD_PORT_LBA2, lba2);
 	port_byte_out(HD_PORT_LBA3, lba3);
 	port_byte_out(HD_PORT_COMMAND, cmd);
+
+  hd_wait_ready();
+ 
+  if (curr_hd_request.cmd == HD_READ) {
+		port_read(HD_PORT_DATA,curr_hd_request.buf, curr_hd_request.nsects * 256);
+  } else if (curr_hd_request.cmd == HD_WRITE) {
+		port_write(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
+  } 
 }
 
 void check_hd_status()
 {
 	uint8_t status = port_byte_in(HD_PORT_STATUS);
-	kprint("status:");
-	char status_str[10];
-	int_to_ascii(status,status_str);
-	kprint(status_str);
+	kprint("hd_status: ");
+	kprint_int(status);
 	kprint("\n");
 }
 
 void reset_hd_controller()
 {
-	kprint("reset:");
-	kprint("\n");
+	kprint("reset:\n");
 	port_byte_out(HD_CMD,4);
 	for (int i=1000;i>0;i--);
 	port_byte_out(HD_CMD,8);

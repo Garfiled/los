@@ -115,19 +115,22 @@ void print_mem(char s[])
 void read_hd(char s[])
 {	
 	int start_sector = atoi(s);
-	char start_sector_str[10];
-	int_to_ascii(start_sector,start_sector_str);
-	kprint(start_sector_str);
-	kprint("\n");
-	uint32_t start_tick = tick;
-	hd_rw(start_sector,HD_READ,1,(void*)(0x9200));
-	uint32_t end_tick = tick;
-	char tick_use_str[10];
-	int_to_ascii(end_tick-start_tick, tick_use_str);
-	kprint(tick_use_str);
-	kprint("\n");
+	//kprint_int(start_sector);
+	//kprint("\n");
+	hd_rw(start_sector, HD_READ, 1, (void*)(0x9200));
 }
 
+void write_hd(char s[])
+{	
+	int start_sector = atoi(s);
+  char *buf = (char*)0x9200;
+  for (int i=0; i < 512; i++) {
+    buf[i] = 'a';
+  }
+	//kprint(start_sector);
+  kprint("write_hd\n");
+	hd_rw(start_sector, HD_WRITE, 1, buf);
+}
 
 void user_input(char *input) {
   if (strcmp(input, "exit") == 0) {
@@ -156,7 +159,11 @@ void user_input(char *input) {
 		reset_hd_controller();
 	} else if (strcmpN(input,"lsmem",5)==0) {
 		print_mem(input+6);
-	}
+	} else if (strcmpN(input, "writehd", 7) == 0) {
+    write_hd(input + 8);
+  } else if (strcmpN(input, "cls", 3) == 0) {
+    clear_screen();
+  }
 
   kprint("You said: ");
   kprint(input);
