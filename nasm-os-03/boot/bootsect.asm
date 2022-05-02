@@ -15,13 +15,13 @@ SETUP equ 0x7e00
     call print
     call print_nl
 	
-	mov dl,[BOOT_DRIVE]
-	mov dh,0x3
-	mov cl,0x2
-	mov bx,SETUP
-	call disk_load
+    mov dl,[BOOT_DRIVE]
+    mov dh,0x3
+    mov cl,0x2
+    mov bx,SETUP
+    call disk_load
 
-	jmp SETUP
+    jmp SETUP
 
 %include "boot/print.asm"
 %include "boot/print_hex.asm"

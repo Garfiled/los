@@ -10,6 +10,7 @@ static void hd_interrupt(registers_t *regs) {
 }
 
 void init_hd(uint32_t freq) {
+    UNUSED(freq);
     register_interrupt_handler(IRQ14, hd_interrupt);
 
     /* Send the command */

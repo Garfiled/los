@@ -17,7 +17,7 @@ struct HD hd[HD_NUM];
 
 void* hd_setup(void* addr) {
 	hd_num = *((char*)addr);
-
+  kprint("hd_setup\n");
 	addr++;
 
 	for (int i=0;i<hd_num;i++)
@@ -38,17 +38,14 @@ void* hd_setup(void* addr) {
 }
 
 void kernel_main() {
-    isr_install();
-    irq_install();
+  kprint("I am in kernel!\n");
+  isr_install();
+  irq_install();
 
-    asm("int $2");
-    asm("int $3");
-
-    kprint("Type something, it will go through the kernel\n"
-        "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
+  asm("int $2");
+  asm("int $3");
 
 	hd_setup((void*)(SYSTEM_PARAM_ADDR));
-
 }
 
 void print_hd() {
@@ -130,24 +127,24 @@ void read_hd(char s[])
 
 
 void user_input(char *input) {
-    if (strcmp(input, "exit") == 0) {
-        kprint("Stopping the CPU. Bye!\n");
-        asm volatile("hlt");
-    } else if (strcmp(input, "PAGE") == 0) {
-        /* Lesson 22: Code to test kmalloc, the rest is unchanged */
-        uint32_t phys_addr;
-        uint32_t page = kmalloc(1000, 1, &phys_addr);
-        char page_str[16] = "";
-        hex_to_ascii(page, page_str);
-        char phys_str[16] = "";
-        hex_to_ascii(phys_addr, phys_str);
-        kprint("Page: ");
-        kprint(page_str);
-        kprint(", physical address: ");
-        kprint(phys_str);
-        kprint("\n");
-    } else if (strcmp(input,"lshd")==0) {
-		print_hd();
+  if (strcmp(input, "exit") == 0) {
+      kprint("Stopping the CPU. Bye!\n");
+      asm volatile("hlt");
+  } else if (strcmp(input, "page") == 0) {
+      /* Lesson 22: Code to test kmalloc, the rest is unchanged */
+      uint32_t phys_addr;
+      uint32_t page = kmalloc(1000, 1, &phys_addr);
+      char page_str[16] = "";
+      hex_to_ascii(page, page_str);
+      char phys_str[16] = "";
+      hex_to_ascii(phys_addr, phys_str);
+      kprint("Page: ");
+      kprint(page_str);
+      kprint(", physical address: ");
+      kprint(phys_str);
+      kprint("\n");
+  } else if (strcmp(input,"lshd")==0) {
+    print_hd();
 	} else if (strcmpN(input,"readhd",6)==0) {
 		read_hd(input+7);
 	} else if (strcmpN(input, "checkhd",7)==0) {
@@ -157,7 +154,8 @@ void user_input(char *input) {
 	} else if (strcmpN(input,"lsmem",5)==0) {
 		print_mem(input+6);
 	}
-    kprint("You said: ");
-    kprint(input);
-    kprint("\n> ");
+
+  kprint("You said: ");
+  kprint(input);
+  kprint("\n> ");
 }

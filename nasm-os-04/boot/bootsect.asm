@@ -15,13 +15,13 @@ HDD equ 0x80      ; hard disk
     call print
     call print_nl
 	
-	mov dl,[BOOT_DRIVE]
-	mov dh,0x3
-	mov cl,0x2
-	mov bx,SETUP
-	call disk_load
+    mov dl,[BOOT_DRIVE]
+    mov dh,0x3
+    mov cl,0x2
+    mov bx,SETUP
+    call disk_load
 
-	jmp SETUP
+    jmp SETUP
 
 %include "boot/print.asm"
 %include "boot/print_hex.asm"
@@ -38,14 +38,16 @@ times 510 - ($-$$) db 0
 dw 0xaa55
 
 [bits 16]
+        ; get hd count
 	mov ah,0x8
 	mov dl,HDD
 	int 0x13
 	jc req_disk_err
 	mov dh,ah
-	call print_hex
+	call print_hex ; num in dl
 	call print_nl
 	mov [HDD_NUM],dl
+
 	mov ah,0x41
 	mov dl,HDD
 	mov bx,0x55AA
@@ -101,9 +103,9 @@ load_kernel:
     call print_nl
 
     mov bx, KERNEL_OFFSET ; Read from disk and store in 0x1000
-    mov dh, 40 ; Our future kernel will be larger, make this big
+    mov dh, 20 ; Our future kernel will be larger, make this big
     mov dl, [BOOT_DRIVE]
-	mov cl,0x5
+    mov cl,0x5
     call disk_load
     ret
 

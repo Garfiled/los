@@ -1,6 +1,7 @@
 #include "../cpu/isr.h"
 #include "../cpu/ports.h"
 #include "../libc/function.h"
+#include "../libc/string.h"
 #include "../drivers/screen.h"
 #include "../drivers/hd.h"
 
@@ -47,7 +48,8 @@ static void hd_interrupt(registers_t *regs) {
 }
 
 void init_hd(uint32_t freq) {
-    register_interrupt_handler(IRQ14, hd_interrupt);
+   UNUSED(freq);
+   register_interrupt_handler(IRQ14, hd_interrupt);
 
     /* Send the command */
    port_byte_out(port_byte_in(0x21)&0xfb, 0x21); /* Command port */
