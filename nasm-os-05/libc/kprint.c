@@ -30,47 +30,38 @@ int kprintf(char *fmt, ...)
 	va_start(args, fmt);
 
 	//读到\0为结束
-	while (*fmt != '\0')
-	{
+	while (*fmt != '\0') {
 		//格式化标记%
-		if (*fmt == '%')
-		{
+		if (*fmt == '%') {
 			//显示一个字符
-			if ('c' == *(fmt + 1))
-			{
+			if ('c' == *(fmt + 1)) {
 				ch = va_arg(args, char);
 				putchar(ch);
 				count++;
 				fmt += 2;
 			}
 			//显示字符串
-			else if ('s' == *(fmt + 1))
-			{
+			else if ('s' == *(fmt + 1)) {
 				str = va_arg(args, char*);
 				count += puts(str);
 				fmt += 2;
 			}
 			//显示整数
-			else if ('d' == *(fmt + 1))
-			{
+			else if ('d' == *(fmt + 1)) {
 				_itoa(va_arg(args, int), buff, 10);
 				count += puts(buff);
 				fmt += 2;
 			}
 			//显示无符号16进制整数
-			else if ('x' == *(fmt + 1))
-			{
+			else if ('x' == *(fmt + 1)) {
 				unsigned int num = va_arg(args, unsigned int);
 				unsigned int nl = num & 0xffff;
 				unsigned int nh = (num >> 16) & 0xffff;
 				count += puts("0x");
-				if (nh == 0)
-				{
+				if (nh == 0) {
 					_itoa(nl, buff, 16);
 					count += puts(buff);
-				}
-				else
-				{
+				} else {
           _itoa(nh, buff, 16);
 					count += puts(buff);
 
@@ -86,8 +77,7 @@ int kprintf(char *fmt, ...)
 			}
 		}
 		//显示普通字符
-		else
-		{
+		else {
 			putchar(*fmt++);
 			count++;
 		}

@@ -2,8 +2,10 @@
 #include "../cpu/ports.h"
 #include "../libc/function.h"
 #include "../libc/string.h"
+#include "../libc/kprint.h"
 #include "../drivers/screen.h"
 #include "../drivers/hd.h"
+#include "../mm/alloc.h"
 
 
 struct hd_request 
@@ -18,27 +20,24 @@ static struct hd_request curr_hd_request;
 
 static void hd_interrupt(registers_t *regs) {
   UNUSED(regs);
-  kprint("\n");
-	kprint("hd_interrupt ");
 	uint8_t status = port_byte_in(HD_PORT_STATUS);
-	kprint("status:");
-	kprint_int(status);
-	kprint("\n");
+	kprintf("\n--hd_interrupt status:%d\n", status);
 
   if (curr_hd_request.cmd == HD_READ) {
-    kprint("port_read finish>\n");
+    kprintf("--port_read finish %x\n", curr_hd_request.buf);
   } else if (curr_hd_request.cmd == HD_WRITE) {
-    kprint("port_write finish>\n");
+    kprintf("--port_write finish %x\n", curr_hd_request.buf);
   }
 	//读取数据
 	if (curr_hd_request.cmd == HD_READ) {
-	  kprint("read from hd: ");
+	  kprint("--read from hd: ");
 	  kprint_hex_n((char*)curr_hd_request.buf, 10);
 	  kprint("\n");
 	}
 	//写入数据
 	else if (curr_hd_request.cmd == HD_WRITE) {
 	}
+  free_mm(curr_hd_request.buf);
   kprint(">");
 }
 
