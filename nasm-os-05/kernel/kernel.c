@@ -18,6 +18,22 @@ extern uint32_t tick;
 char hd_num = 0;
 struct HD hd[HD_NUM];
 
+void kernel_main() {
+  kprint("I am in kernel!\n");
+  isr_install();
+  irq_install();
+
+  asm("int $2");
+  asm("int $3");
+
+	hd_setup((void*)(SYSTEM_PARAM_ADDR));
+
+  // install virtual memory mangement
+  install_alloc();
+  install_page();
+  kprint("los> ");
+}
+
 void* hd_setup(void* addr) {
   hd_num = *((char*)addr);
   kprintf("hd_setup hd_num:%d\n", hd_num);
@@ -40,33 +56,16 @@ void* hd_setup(void* addr) {
 	return addr;
 }
 
-void kernel_main() {
-  kprint("I am in kernel!\n");
-  isr_install();
-  irq_install();
-
-  asm("int $2");
-  asm("int $3");
-
-  // install virtual memory mangement
-  install_alloc();
-  install_page();
-
-	hd_setup((void*)(SYSTEM_PARAM_ADDR));
-}
-
 void print_hd() {
 	kprint("hd cyl head sector sector_bytes nsectors\n");
 	for (int i = 0; i < hd_num; i++) {
-    kprintf("%d %d %d %d %d %d", i, hd[i].cyl, hd[i].head, hd[i].sector, hd[i].sector_bytes, hd[i].nsectors);
+    kprintf("%d %d %d %d %d %d\n", i, hd[i].cyl, hd[i].head, hd[i].sector, hd[i].sector_bytes, hd[i].nsectors);
 	}
 }
 void print_mem(char s[])
 {
-	int mem = atoi(s);
-  int count = 4;
-  kprint("mem:");
-  kprint_hex_n((char*)mem, count);
+	uint32_t mem = atoi(s);
+  kprintf("mem:%x\n", *((uint32_t*)mem));
 }
 
 void read_hd(char s[])
@@ -116,6 +115,12 @@ void user_input(char *input) {
     write_hd(input + 8);
   } else if (strcmpN(input, "cls", 3) == 0) {
     clear_screen();
+  } else if (strcmpN(input, "malloc", 6) == 0) {
+    void *alloc_buf = alloc_mm(1);
+    kprintf("-- alloc_buf=%x\n", alloc_buf);
+  } else if (strcmpN(input, "write", 6) == 0) {
+    char *buf = (char*)(16 * 1024 * 1024);
+    buf[0] = 'a';
   }
-  kprint("\n> ");
+  kprint("los> ");
 }

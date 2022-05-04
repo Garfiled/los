@@ -1,4 +1,3 @@
-#include "../drivers/screen.h"
 #include "./string.h"
 #include "./kprint.h"
 #include <stdarg.h>
