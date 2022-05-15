@@ -16,7 +16,7 @@ HDD equ 0x80      ; hard disk
   call print_nl
 
   mov dl,[BOOT_DRIVE]
-  mov dh,0x3
+  mov dh,0x7 ; 4 sectors for boot and 4 sectors for boot other core
   mov cl,0x2
   mov bx,SETUP
   call disk_load
@@ -108,7 +108,7 @@ load_kernel:
     mov bx, 0x0 ; Read from disk and store in 0x10000
     mov dh, 128 ; Our future kernel will be larger, make this big
     mov dl, [BOOT_DRIVE]
-    mov cl, 0x5
+    mov cl, 0x9
     call disk_load
     ; reset es
     mov bx, 0x0

@@ -26,11 +26,8 @@ void kernel_main() {
   isr_install();
   irq_install();
 
-  kprintf("kernel debug1\n");
-  //asm("int $2");
-  kprintf("kernel debug2\n");
-  //asm("int $3");
-  kprintf("kernel debug3\n");
+  asm("int $2");
+  asm("int $3");
 
 	hd_setup((void*)(SYSTEM_PARAM_ADDR));
 
@@ -38,7 +35,7 @@ void kernel_main() {
   install_alloc();
   install_page();
 
-  //mpinit();
+  mpinit();
 
   //startothers();
 

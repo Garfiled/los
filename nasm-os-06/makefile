@@ -11,8 +11,9 @@ LD = ld -m elf_i386
 CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
 
 # First rule is run by default
-os-image.bin: boot/bootsect.bin kernel.bin padding.bin
+os-image.bin: boot/bootsect.bin boot/entryother.bin kernel.bin padding.bin
 	cat $^ > os-image.bin
+
 
 padding.bin:
 	dd if=/dev/zero of=./padding.bin bs=64k count=1
@@ -26,9 +27,9 @@ kernel.bin: boot/kernel_entry.o ${OBJ}
 kernel.elf: boot/kernel_entry.o ${OBJ}
 	${LD} -o $@ -Ttext 0x10000 $^ 
 
-#entryother.bin: boot/entryother.asm
-#	nasm $< -f bin -o $@
-#	${LD} -o $@ -Ttext 0x800 $^ --oformat binary
+entryother.bin: boot/entryother.asm
+	nasm $< -f bin -o $@
+	${LD} -o $@ -Ttext 0x8400 $^ --oformat binary
 
 run: os-image.bin
 	qemu-system-i386 -hda os-image.bin -smp 2
