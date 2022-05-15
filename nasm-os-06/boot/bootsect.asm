@@ -1,5 +1,5 @@
 [org 0x7c00]
-KERNEL_OFFSET equ 0x1000 ; The same one we used when linking the kernel
+KERNEL_OFFSET equ 0x10000 ; The same one we used when linking the kernel
 SETUP equ 0x7e00  ;SETUP addr
 HDD equ 0x80      ; hard disk
   xor ax,ax
@@ -102,11 +102,17 @@ load_kernel:
     call print
     call print_nl
 
-    mov bx, KERNEL_OFFSET ; Read from disk and store in 0x1000
-    mov dh, 40 ; Our future kernel will be larger, make this big
+    ; set es so we can use 0x10000 address
+    mov bx, 0x1000
+    mov es, bx
+    mov bx, 0x0 ; Read from disk and store in 0x10000
+    mov dh, 128 ; Our future kernel will be larger, make this big
     mov dl, [BOOT_DRIVE]
-    mov cl,0x5
+    mov cl, 0x5
     call disk_load
+    ; reset es
+    mov bx, 0x0
+    mov es, bx
     ret
 
 [bits 32]

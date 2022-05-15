@@ -15,16 +15,16 @@ os-image.bin: boot/bootsect.bin kernel.bin padding.bin
 	cat $^ > os-image.bin
 
 padding.bin:
-	dd if=/dev/zero of=./padding.bin bs=32k count=1
+	dd if=/dev/zero of=./padding.bin bs=64k count=1
 
 # '--oformat binary' deletes all symbols as a collateral, so we don't need
 # to 'strip' them manually on this case
 kernel.bin: boot/kernel_entry.o ${OBJ}
-	${LD} -o $@ -Ttext 0x1000 $^ --oformat binary
+	${LD} -o $@ -Ttext 0x10000 $^ --oformat binary
 
 # Used for debugging purposes
 kernel.elf: boot/kernel_entry.o ${OBJ}
-	${LD} -o $@ -Ttext 0x1000 $^ 
+	${LD} -o $@ -Ttext 0x10000 $^ 
 
 #entryother.bin: boot/entryother.asm
 #	nasm $< -f bin -o $@
