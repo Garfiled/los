@@ -8,6 +8,10 @@ start_other:
   mov ds, ax
   mov ss, ax
 
+  mov bx, START_OTHER_REAL_MODE 
+  call print
+  call print_nl
+
   lgdt [gdt_descriptor]
   mov eax, cr0
   or eax, 0x1
@@ -15,6 +19,7 @@ start_other:
   jmp CODE_SEG:start_other32
 
 %include "boot/gdt.asm"
+%include "boot/print.asm"
 
 [bits 32]
 start_other32:
@@ -41,4 +46,5 @@ start_other32:
 spin:
   jmp spin
 
+START_OTHER_REAL_MODE db "Start Other Core in 16-bit Real Mode", 0
 times 2048 - ($-$$) db 0

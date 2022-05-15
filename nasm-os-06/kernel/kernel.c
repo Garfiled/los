@@ -36,8 +36,9 @@ void kernel_main() {
   install_page();
 
   mpinit();
+  lapicinit();
 
-  //startothers();
+  startothers();
 
   kprint("los> ");
 }
@@ -136,18 +137,18 @@ void user_input(char *input) {
 // Start the non-boot (AP) processors.
 void startothers(void)
 {
-  extern unsigned char _binary_entryother_start[], _binary_entryother_size[];
+  kprintf("startothers\n");
+  //extern unsigned char _binary_entryother_start[], _binary_entryother_size[];
   unsigned char *code;
   struct cpu *c;
   char *stack;
 
-  // Write entry code to unused memory at 0x7000.
-  // The linker has placed the image of entryother.S in
-  // _binary_entryother_start.
-  code = (unsigned char*)0x800;
+  // Write entry code to unused memory at 0x8400.
+  code = (unsigned char*)0x8400;
   //MEMMOVE(code, _binary_entryother_start, (unsigned int)_binary_entryother_size);
 
   for(c = cpus; c < cpus+ncpu; c++){
+    kprintf("loop cpu: %x %x\n", c, mycpu());
     if(c == mycpu())  // We've started already.
       continue;
 
@@ -161,9 +162,11 @@ void startothers(void)
 
     lapicstartap(c->apicid, code);
 
+    kprintf("waitting for start cpu %d\n", c->apicid);
     // wait for cpu to finish mpmain()
     while(c->started == 0)
       ;
+    kprintf("finsih start cpu %d\n", c->apicid);
   }
 }
 

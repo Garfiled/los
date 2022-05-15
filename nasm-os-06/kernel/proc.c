@@ -8,10 +8,12 @@ struct cpu* mycpu(void)
 {
   int apicid, i;
 
-  if(readeflags()&FL_IF) {
+  /*
+  if(readeflags() & FL_IF) {
     kprintf("mycpu called with interrupts enabled!\n");
     return NULL;
   }
+  */
   apicid = lapicid();
   // APIC IDs are not guaranteed to be contiguous. Maybe we should have
   // a reverse map, or reserve a register to store &cpus[i].
@@ -20,4 +22,5 @@ struct cpu* mycpu(void)
       return &cpus[i];
   }
   kprintf("unknown apicid %d!\n", apicid);
+  return NULL;
 }
