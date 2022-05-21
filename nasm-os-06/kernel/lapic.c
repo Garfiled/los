@@ -44,18 +44,20 @@ static void lapicw(int index, int value)
 
 void lapicinit(void)
 {
-  if(!lapic)
+  if(!lapic) {
+    kprintf("lapicinit do nothing!\n");
     return;
+  }
 
   // Enable local APIC; set spurious interrupt vector.
-  lapicw(SVR, ENABLE | (IRQ0 + 31));
+  lapicw(SVR, ENABLE | (31));
 
   // The timer repeatedly counts down at bus frequency
   // from lapic[TICR] and then issues an interrupt.
   // If xv6 cared more about precise timekeeping,
   // TICR would be calibrated using an external time source.
   lapicw(TDCR, X1);
-  lapicw(TIMER, PERIODIC | (IRQ0 + 0));
+  lapicw(TIMER, PERIODIC | (0));
   lapicw(TICR, 10000000);
 
   // Disable logical interrupt lines.
@@ -68,7 +70,7 @@ void lapicinit(void)
     lapicw(PCINT, MASKED);
 
   // Map error interrupt to IRQ_ERROR.
-  lapicw(ERROR, IRQ0 + 19);
+  lapicw(ERROR, 19);
 
   // Clear error status register (requires back-to-back writes).
   lapicw(ESR, 0);
@@ -110,11 +112,10 @@ microdelay(int us)
 }
 
 #define CMOS_PORT    0x70
-#define CMOS_RETURN  0x71
 
 void lapicstartap(unsigned char apicid, unsigned int addr)
 {
-  kprintf("lapicstartap cpu=%d\n", apicid);
+  kprintf("lapicstartap cpu=%d %x\n", apicid, addr);
   int i;
   unsigned short *wrv;
 

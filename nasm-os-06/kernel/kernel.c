@@ -36,8 +36,12 @@ void kernel_main() {
   install_page();
 
   mpinit();
-  lapicinit();
+  //lapicinit();
 
+  char *p = (char*)0x8400;
+  kprintf("ddd>%x ", p);
+  kprint_hex_n(p, 10);
+  kprintf("\n");
   startothers();
 
   kprint("los> ");
@@ -138,14 +142,11 @@ void user_input(char *input) {
 void startothers(void)
 {
   kprintf("startothers\n");
-  //extern unsigned char _binary_entryother_start[], _binary_entryother_size[];
   unsigned char *code;
   struct cpu *c;
   char *stack;
 
-  // Write entry code to unused memory at 0x8400.
   code = (unsigned char*)0x8400;
-  //MEMMOVE(code, _binary_entryother_start, (unsigned int)_binary_entryother_size);
 
   for(c = cpus; c < cpus+ncpu; c++){
     kprintf("loop cpu: %x %x\n", c, mycpu());
@@ -158,11 +159,11 @@ void startothers(void)
     stack = alloc_mm(4096);
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
-    //*(int**)(code-12) = (void *) V2P(entrypgdir);
+    *(int**)(code-12) = (void *)0x9000;
 
     lapicstartap(c->apicid, code);
 
-    kprintf("waitting for start cpu %d\n", c->apicid);
+    kprintf("wait for start cpu %d %x %x\n", c->apicid, stack, code);
     // wait for cpu to finish mpmain()
     while(c->started == 0)
       ;
@@ -174,4 +175,8 @@ void startothers(void)
 void mpenter()
 {
   kprintf("kernel cpu %d mpenter\n", mycpu()->apicid);
+  mycpu()->started = 1;
+  while (1) {
+    asm volatile("hlt");
+  }
 }

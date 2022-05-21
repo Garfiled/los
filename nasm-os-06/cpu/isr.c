@@ -119,7 +119,7 @@ char *exception_messages[] = {
 };
 
 void isr_handler(registers_t *r) {
-    kprintf("isr received interrupt: %d %s\n", r->int_no, exception_messages[r->int_no]);
+    //kprintf("isr received interrupt: %d %s\n", r->int_no, exception_messages[r->int_no]);
     /* Handle the interrupt in a more modular way */
     if (interrupt_handlers[r->int_no] != 0) {
       isr_t handler = interrupt_handlers[r->int_no];

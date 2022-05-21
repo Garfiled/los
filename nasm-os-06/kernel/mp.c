@@ -136,6 +136,6 @@ mpinit(void)
     // Bochs doesn't support IMCR, so this doesn't run on Bochs.
     // But it would on real hardware.
     port_byte_out(0x22, 0x70);
-    port_byte_out(port_byte_in(0x23) | 1, 0x23);
+    port_byte_out(0x23, port_byte_in(0x23) | 1);
   }
 }

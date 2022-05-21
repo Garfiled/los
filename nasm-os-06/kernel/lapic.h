@@ -1,3 +1,3 @@
 #pragma once
 
-extern volatile unsigned int*    lapic;
+extern volatile unsigned int* lapic;

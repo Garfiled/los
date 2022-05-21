@@ -21,6 +21,7 @@ static inline void open_mm_page()
 // 页表设置
 void install_page()
 {
+  kprintf("install page\n");
 	//页目录开始于 [0x600000, 0x601000) ，大小为1024个（每个4字节）共4096字节
 	uint32_t *page_dir = (uint32_t *) PAGE_DIR;
 	//页表1开始于0x600000 + 0x1000 = 0x601000
@@ -37,7 +38,7 @@ void install_page()
       } else {
         if (i == 4 && j == 0) {
           // 0x605000
-          kprintf("--debug:%x\n", &page_table[j]);
+          //kprintf("--debug:%x\n", &page_table[j]);
         }
 			  page_table[j] = 0;
       }
@@ -45,7 +46,7 @@ void install_page()
 		}
 		page_dir[i] = ((uint32_t) page_table | 3);
     if (i == 4) {
-      kprintf("--debug2:%x %x\n", page_table, page_dir[i]);
+      //kprintf("--debug2:%x %x\n", page_table, page_dir[i]);
     }
 		page_table += 1024;
 	}

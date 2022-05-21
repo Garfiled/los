@@ -27,10 +27,6 @@ kernel.bin: boot/kernel_entry.o ${OBJ}
 kernel.elf: boot/kernel_entry.o ${OBJ}
 	${LD} -o $@ -Ttext 0x10000 $^ 
 
-entryother.bin: boot/entryother.asm
-	nasm $< -f bin -o $@
-	${LD} -o $@ -Ttext 0x8400 $^ --oformat binary
-
 run: os-image.bin
 	qemu-system-i386 -hda os-image.bin -smp 2
 

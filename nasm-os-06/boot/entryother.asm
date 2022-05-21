@@ -1,12 +1,14 @@
 [org 0x8400]
 [bits 16]
 start_other:
-  cli
   ; Zero data segment registers DS, ES, and SS.
   xor ax, ax
   mov es, ax
   mov ds, ax
   mov ss, ax
+
+  mov bp, 0x9000
+  mov sp, bp
 
   mov bx, START_OTHER_REAL_MODE 
   call print
