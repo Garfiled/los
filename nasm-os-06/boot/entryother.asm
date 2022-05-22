@@ -1,4 +1,4 @@
-[org 0x8400]
+[org 0x6000]
 [bits 16]
 start_other:
   ; Zero data segment registers DS, ES, and SS.
@@ -33,17 +33,18 @@ start_other32:
   mov gs, ax
 
   ; Use entrypgdir as our initial page table
-  mov eax, [start_other - 12]
-  mov cr3, eax
+  ;mov eax, [start_other - 12]
+  ;mov cr3, eax
 
   ; Turn on paging. 
-  mov eax, cr0
-  or eax, 0x80000000
-  mov cr0, eax
+  ;mov eax, cr0
+  ;or eax, 0x80000000
+  ;mov cr0, eax
 
   mov esp, [start_other - 4]
-  mov eax, start_other - 8
+  mov eax, [start_other - 8]
   call eax
+  jmp $
 
 spin:
   jmp spin

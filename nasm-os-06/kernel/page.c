@@ -53,6 +53,7 @@ void install_page()
 
 	//设置cr3寄存器为页目录的值
 	set_cr3(PAGE_DIR);
+
 	//开启内存分页
 	open_mm_page();
 

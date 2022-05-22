@@ -10,6 +10,7 @@
 #include "kernel.h"
 #include "page.h"
 #include "proc.h"
+#include "lapic.h"
 
 #include <stdint.h>
 
@@ -21,28 +22,33 @@ extern uint32_t tick;
 char hd_num = 0;
 struct HD hd[HD_NUM];
 
+void newb();
+
 void kernel_main() {
   kprint("I am in kernel!\n");
   isr_install();
   irq_install();
 
-  asm("int $2");
-  asm("int $3");
+  //asm("int $2");
+  //asm("int $3");
 
 	hd_setup((void*)(SYSTEM_PARAM_ADDR));
+  mpinit();
+  startothers();
 
   // install virtual memory mangement
   install_alloc();
   install_page();
 
-  mpinit();
   //lapicinit();
 
-  char *p = (char*)0x8400;
-  kprintf("ddd>%x ", p);
-  kprint_hex_n(p, 10);
-  kprintf("\n");
-  startothers();
+  //char *p = (char*)0x6000;
+ // kprintf("ddd>%x ", p);
+ // kprint_hex_n(p, 10);
+ // kprintf("\n");
+
+  //asm volatile("cli");
+  //newb();
 
   kprint("los> ");
 }
@@ -78,7 +84,10 @@ void print_hd() {
 void print_mem(char s[])
 {
 	uint32_t mem = atoi(s);
-  kprintf("mem:%x\n", *((uint32_t*)mem));
+  //kprintf("mem:%x\n", *((uint32_t*)mem));
+  kprintf("mem:");
+  kprint_hex_n((char*)mem, 10);
+  kprintf("\n");
 }
 
 void read_hd(char s[])
@@ -146,7 +155,7 @@ void startothers(void)
   struct cpu *c;
   char *stack;
 
-  code = (unsigned char*)0x8400;
+  code = (unsigned char*)0x6000;
 
   for(c = cpus; c < cpus+ncpu; c++){
     kprintf("loop cpu: %x %x\n", c, mycpu());
@@ -159,7 +168,7 @@ void startothers(void)
     stack = alloc_mm(4096);
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
-    *(int**)(code-12) = (void *)0x9000;
+    //*(int**)(code-12) = (void *)0x9000;
 
     lapicstartap(c->apicid, code);
 
@@ -179,4 +188,38 @@ void mpenter()
   while (1) {
     asm volatile("hlt");
   }
+}
+
+void newb()
+{
+  volatile uint8_t aprunning = 0;  // count how many APs have started
+  uint8_t bspid, bspdone = 0;      // BSP id and spinlock flag
+  // get the BSP's Local APIC ID
+  __asm__ __volatile__ ("mov $1, %%eax; cpuid; shrl $24, %%ebx;": "=b"(bspid) : : );
+  uint32_t lapic_ptr = *lapic;
+ 
+  // for each Local APIC ID we do...
+  for(int i = 0; i < ncpu; i++) {
+  	// do not start BSP, that's already running this code
+  	if((cpus + i) == mycpu()) continue;
+    kprintf("newb send INIT IPI %d\n", i);
+  	// send INIT IPI
+  	*((volatile uint32_t*)(lapic_ptr + 0x280)) = 0;                                                                             // clear APIC errors
+  	*((volatile uint32_t*)(lapic_ptr + 0x310)) = (*((volatile uint32_t*)(lapic_ptr + 0x310)) & 0x00ffffff) | (i << 24);         // select AP
+  	*((volatile uint32_t*)(lapic_ptr + 0x300)) = (*((volatile uint32_t*)(lapic_ptr + 0x300)) & 0xfff00000) | 0x00C500;          // trigger INIT IPI
+  	do { __asm__ __volatile__ ("pause" : : : "memory"); }while(*((volatile uint32_t*)(lapic_ptr + 0x300)) & (1 << 12));         // wait for delivery
+  	*((volatile uint32_t*)(lapic_ptr + 0x310)) = (*((volatile uint32_t*)(lapic_ptr + 0x310)) & 0x00ffffff) | (i << 24);         // select AP
+  	*((volatile uint32_t*)(lapic_ptr + 0x300)) = (*((volatile uint32_t*)(lapic_ptr + 0x300)) & 0xfff00000) | 0x008500;          // deassert
+  	do { __asm__ __volatile__ ("pause" : : : "memory"); }while(*((volatile uint32_t*)(lapic_ptr + 0x300)) & (1 << 12));         // wait for delivery
+  	// send STARTUP IPI (twice)
+  	for(int j = 0; j < 2; j++) {
+  		*((volatile uint32_t*)(lapic_ptr + 0x280)) = 0;                                                                     // clear APIC errors
+  		*((volatile uint32_t*)(lapic_ptr + 0x310)) = (*((volatile uint32_t*)(lapic_ptr + 0x310)) & 0x00ffffff) | (i << 24); // select AP
+  		*((volatile uint32_t*)(lapic_ptr + 0x300)) = (*((volatile uint32_t*)(lapic_ptr + 0x300)) & 0xfff0f600) | 0x000608;  // trigger STARTUP IPI for 0800:0000
+  		do { __asm__ __volatile__ ("pause" : : : "memory"); }while(*((volatile uint32_t*)(lapic_ptr + 0x300)) & (1 << 12)); // wait for delivery
+  	}
+  }
+  // release the AP spinlocks
+  bspdone = 1;
+  // now you'll have the number of running APs in 'aprunning'
 }

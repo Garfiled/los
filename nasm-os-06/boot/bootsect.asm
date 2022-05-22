@@ -2,6 +2,7 @@
 [bits 16]
 KERNEL_OFFSET equ 0x10000 ; The same one we used when linking the kernel
 SETUP equ 0x7e00  ;SETUP addr
+STARTOTHER equ 0x6000  ;SETUP addr
 HDD equ 0x80      ; hard disk
   xor ax,ax
   mov es,ax
@@ -17,7 +18,7 @@ HDD equ 0x80      ; hard disk
   call print_nl
 
   mov dl,[BOOT_DRIVE]
-  mov dh,0x7 ; 4 sectors for boot and 4 sectors for boot other core
+  mov dh,0x3 ; 4 sectors for boot and 4 sectors for boot other core
   mov cl,0x2
   mov bx,SETUP
   call disk_load
@@ -87,6 +88,7 @@ check_hdd_loop:
 	jmp check_hdd_loop
 
 check_hdd_skip:
+  call load_startother
   call load_kernel ; read the kernel from disk
   call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
   jmp $ ; Never executed
@@ -96,6 +98,15 @@ req_disk_err:
 	call print_hex
 	call print_nl
 	jmp $
+
+[bits 16]
+load_startother:
+  mov dl,[BOOT_DRIVE]
+  mov dh,0x4 ; boot other core
+  mov cl,0x5
+  mov bx,STARTOTHER
+  call disk_load
+  ret
 
 [bits 16]
 load_kernel:
