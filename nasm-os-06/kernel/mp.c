@@ -99,7 +99,7 @@ mpinit(void)
   }
   ismp = 1;
   lapic = (unsigned int*)conf->lapicaddr;
-  kprintf("mpinit: %d\n", *lapic);
+  kprintf("mpinit: %d %x\n", *lapic, lapic);
   for(p=(unsigned char*)(conf+1), e=(unsigned char*)conf+conf->length; p<e; ){
     switch(*p){
     case MPPROC:

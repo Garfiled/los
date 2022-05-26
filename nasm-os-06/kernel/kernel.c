@@ -21,7 +21,6 @@ extern uint32_t tick;
 char hd_num = 0;
 struct HD hd[HD_NUM];
 
-void newb();
 void set_stack(uint32_t);
 
 inline set_stack(uint32_t stack_addr)
@@ -171,8 +170,6 @@ void user_input(char *input) {
   kprint("los> ");
 }
 
-int wait = 0;
-
 // Start the non-boot (AP) processors.
 void startothers(void)
 {
@@ -197,14 +194,11 @@ void startothers(void)
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
 
-    wait = 0;
     lapicstartap(c->apicid, code);
 
     kprintf("wait for start cpu %d %x %x\n", c->apicid, stack, code);
     // wait for cpu to finish start
-    //while(c->started == 0) {
-    //}
-    while (!wait) {};
+    while(c->started == 0) {};
     kprintf("finsih start cpu %d\n", c->apicid);
   }
 }
@@ -212,50 +206,21 @@ void startothers(void)
 void mpenter()
 {
   struct cpu* cc = mycpu();
-  kprintf("mpenter cpu:%d esp:%x %x %x\n", cc->apicid, esp(), cc, &cc->started);
+  kprintf("mpenter cpu:%d esp:%x cc:%x lapic:%x\n", cc->apicid, esp(), cc, lapic);
   install_page();
   // 栈地址
   asm volatile("cli");
+  asm volatile("movl %%eax, %%edx" :: "a"(cc));
   asm volatile("movl %%eax, %%ebp" :: "a"(0x40000000));
   asm volatile("movl %ebp, %esp");
+  asm volatile("pushl %edx");
   asm volatile("sti");
   kprintf("debug ebp=%x esp=%x\n", ebp(), esp());
   kprintf("debug >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-  wait = 1;
-  //cc->started = 1;
+  // 这里不能调用mycpu() 因为其中的lapicid()会访问0xFEE00000, 对lapic不够熟悉
+  //struct cpu* cc2 = mycpu();
+  struct cpu* cc2 = (struct cpu*)(*(uint32_t*)(0x40000000 - 4));
+  kprintf("debug>[%x] [%x] [%x] [%x]\n", lapic, cc, &cc, cc2);
+  cc2->started = 1;
   hang();
-}
-
-void newb()
-{
-  volatile uint8_t aprunning = 0;  // count how many APs have started
-  uint8_t bspid, bspdone = 0;      // BSP id and spinlock flag
-  // get the BSP's Local APIC ID
-  __asm__ __volatile__ ("mov $1, %%eax; cpuid; shrl $24, %%ebx;": "=b"(bspid) : : );
-  uint32_t lapic_ptr = *lapic;
- 
-  // for each Local APIC ID we do...
-  for(int i = 0; i < ncpu; i++) {
-  	// do not start BSP, that's already running this code
-  	if((cpus + i) == mycpu()) continue;
-    kprintf("newb send INIT IPI %d\n", i);
-  	// send INIT IPI
-  	*((volatile uint32_t*)(lapic_ptr + 0x280)) = 0;                                                                             // clear APIC errors
-  	*((volatile uint32_t*)(lapic_ptr + 0x310)) = (*((volatile uint32_t*)(lapic_ptr + 0x310)) & 0x00ffffff) | (i << 24);         // select AP
-  	*((volatile uint32_t*)(lapic_ptr + 0x300)) = (*((volatile uint32_t*)(lapic_ptr + 0x300)) & 0xfff00000) | 0x00C500;          // trigger INIT IPI
-  	do { __asm__ __volatile__ ("pause" : : : "memory"); }while(*((volatile uint32_t*)(lapic_ptr + 0x300)) & (1 << 12));         // wait for delivery
-  	*((volatile uint32_t*)(lapic_ptr + 0x310)) = (*((volatile uint32_t*)(lapic_ptr + 0x310)) & 0x00ffffff) | (i << 24);         // select AP
-  	*((volatile uint32_t*)(lapic_ptr + 0x300)) = (*((volatile uint32_t*)(lapic_ptr + 0x300)) & 0xfff00000) | 0x008500;          // deassert
-  	do { __asm__ __volatile__ ("pause" : : : "memory"); }while(*((volatile uint32_t*)(lapic_ptr + 0x300)) & (1 << 12));         // wait for delivery
-  	// send STARTUP IPI (twice)
-  	for(int j = 0; j < 2; j++) {
-  		*((volatile uint32_t*)(lapic_ptr + 0x280)) = 0;                                                                     // clear APIC errors
-  		*((volatile uint32_t*)(lapic_ptr + 0x310)) = (*((volatile uint32_t*)(lapic_ptr + 0x310)) & 0x00ffffff) | (i << 24); // select AP
-  		*((volatile uint32_t*)(lapic_ptr + 0x300)) = (*((volatile uint32_t*)(lapic_ptr + 0x300)) & 0xfff0f600) | 0x000608;  // trigger STARTUP IPI for 0800:0000
-  		do { __asm__ __volatile__ ("pause" : : : "memory"); }while(*((volatile uint32_t*)(lapic_ptr + 0x300)) & (1 << 12)); // wait for delivery
-  	}
-  }
-  // release the AP spinlocks
-  bspdone = 1;
-  // now you'll have the number of running APs in 'aprunning'
 }
