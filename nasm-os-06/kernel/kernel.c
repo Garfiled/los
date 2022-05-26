@@ -5,14 +5,13 @@
 #include "../libc/mem.h"
 #include "../libc/kprint.h"
 #include "../mm/alloc.h"
+#include "../cpu/x86.h"
 
 #include "mp.h"
 #include "kernel.h"
 #include "page.h"
 #include "proc.h"
 #include "lapic.h"
-
-#include <stdint.h>
 
 extern uint32_t tick;
 
@@ -23,9 +22,18 @@ char hd_num = 0;
 struct HD hd[HD_NUM];
 
 void newb();
+void set_stack(uint32_t);
+
+inline set_stack(uint32_t stack_addr)
+{
+  __asm__ volatile("movl %%eax, %%ebp" :: "a"(stack_addr));
+  __asm__ volatile("movl %ebp, %esp");
+  kprintf("debug ebp=%x esp=%x\n", ebp(), esp());
+  hang();
+}
 
 void kernel_main() {
-  kprint("I am in kernel!\n");
+  kprintf("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
   isr_install();
   irq_install();
 
@@ -33,14 +41,28 @@ void kernel_main() {
   //asm("int $3");
 
 	hd_setup((void*)(SYSTEM_PARAM_ADDR));
+
   mpinit();
+
+  //lapicinit();
+
+  // phy memory mgr
+  install_alloc();
+
+  // start other processor
   startothers();
 
   // install virtual memory mangement
-  install_alloc();
   install_page();
+  kprintf("debug ebp=%x esp=%x\n", ebp(), esp());
 
-  //lapicinit();
+  // 栈地址
+  asm volatile("cli");
+  asm volatile("movl %%eax, %%ebp" :: "a"(0x40000000));
+  asm volatile("movl %ebp, %esp");
+  asm volatile("sti");
+  
+  kprintf("debug ebp=%x esp=%x\n", ebp(), esp());
 
   //char *p = (char*)0x6000;
  // kprintf("ddd>%x ", p);
@@ -51,6 +73,8 @@ void kernel_main() {
   //newb();
 
   kprint("los> ");
+  // never return because we have change stack reg
+  hang();
 }
 
 void* hd_setup(void* addr) {
@@ -147,6 +171,8 @@ void user_input(char *input) {
   kprint("los> ");
 }
 
+int wait = 0;
+
 // Start the non-boot (AP) processors.
 void startothers(void)
 {
@@ -165,29 +191,39 @@ void startothers(void)
     // Tell entryother.S what stack to use, where to enter, and what
     // pgdir to use. We cannot use kpgdir yet, because the AP processor
     // is running in low  memory, so we use entrypgdir for the APs too.
-    stack = alloc_mm(4096);
+    // 第一个核使用0x90000，给它让出4K
+    // 后面启动的核都使用0x90000 - 4K
+    stack = (char*)0x8F000;
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
-    //*(int**)(code-12) = (void *)0x9000;
 
+    wait = 0;
     lapicstartap(c->apicid, code);
 
     kprintf("wait for start cpu %d %x %x\n", c->apicid, stack, code);
-    // wait for cpu to finish mpmain()
-    while(c->started == 0)
-      ;
+    // wait for cpu to finish start
+    //while(c->started == 0) {
+    //}
+    while (!wait) {};
     kprintf("finsih start cpu %d\n", c->apicid);
   }
 }
 
-
 void mpenter()
 {
-  kprintf("kernel cpu %d mpenter\n", mycpu()->apicid);
-  mycpu()->started = 1;
-  while (1) {
-    asm volatile("hlt");
-  }
+  struct cpu* cc = mycpu();
+  kprintf("mpenter cpu:%d esp:%x %x %x\n", cc->apicid, esp(), cc, &cc->started);
+  install_page();
+  // 栈地址
+  asm volatile("cli");
+  asm volatile("movl %%eax, %%ebp" :: "a"(0x40000000));
+  asm volatile("movl %ebp, %esp");
+  asm volatile("sti");
+  kprintf("debug ebp=%x esp=%x\n", ebp(), esp());
+  kprintf("debug >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+  wait = 1;
+  //cc->started = 1;
+  hang();
 }
 
 void newb()

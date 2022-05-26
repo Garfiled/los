@@ -6,9 +6,6 @@
 #define UNUSED(x) (void)(x)
 
 #define PAGE_ALIGN_SIZE (4096)
-#define PAGE_DIR			  (0x600000)
-#define PAGE_TABLE		  (PAGE_DIR + PAGE_ALIGN_SIZE)
-
 
 //内存总大小以M为单位
 #define MEM_SIZE			(4096)
@@ -55,6 +52,7 @@ typedef struct isr_params {
 } isr_params_t;
 
 extern void install_page();
+void bind_addr_phy_page(uint32_t addr);
 void page_fault_handler(registers_t *r);
 /*
  * install_alloc : 安装申请内存位图

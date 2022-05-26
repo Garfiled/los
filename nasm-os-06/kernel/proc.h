@@ -59,8 +59,6 @@ struct proc {
   char name[16];               // Process name (debugging)
 };
 
-
-
 static inline unsigned int readeflags(void)
 {
   unsigned int eflags;

@@ -1,5 +1,6 @@
 #include "proc.h"
 #include "../libc/kprint.h"
+#include "../cpu/x86.h"
 #include <stddef.h>
 
 // Must be called with interrupts disabled to avoid the caller being
@@ -22,5 +23,6 @@ struct cpu* mycpu(void)
       return &cpus[i];
   }
   kprintf("unknown apicid %d!\n", apicid);
+  hang();
   return NULL;
 }
