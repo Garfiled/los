@@ -3,12 +3,25 @@
 #include "../cpu/isr.h"
 #include <stdint.h>
 
+
+#define PAGE_ALIGN_SIZE (4096)
+#define PDE_SIZE 4 * 1024 * 1024
+
+// 虚拟地址空间2G处，做页表的映射
+#define MAP_PAGE_TABLE_START 0x80000000
+#define MAP_PAGE_TABLE_PG_DIR MAP_PAGE_TABLE_START + PDE_SIZE
+#define MAP_PAGE_TABLE_UNUSE MAP_PAGE_TABLE_PG_DIR + PAGE_ALIGN_SIZE
+#define MAP_STACK_ADDR 0x40000000
+
+#define MAP_PDE_IDX 512
+#define MAP_PG_DIR_PDE_IDX 513
+#define MAP_STACK_PDE_IDX 256
+
 #define PTE_P           0x001   // Present
 #define PTE_W           0x002   // Writeable
 #define PTE_U           0x004   // User
 #define PTE_PS          0x080   // Page Size
 
-#define PAGE_ALIGN_SIZE (4096)
 
 //内存总大小以M为单位
 #define MEM_SIZE			(4096)
@@ -54,8 +67,8 @@ typedef struct isr_params {
   uint32_t eip, cs, eflags, user_esp, user_ss;
 } isr_params_t;
 
-extern void install_page();
-void bind_addr_phy_page(uint32_t addr);
+void* alloc_pte_for_proc();
+void map_pte(uint32_t addr);
 void page_fault_handler(registers_t *r);
 /*
  * install_alloc : 安装申请内存位图

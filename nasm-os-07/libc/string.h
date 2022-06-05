@@ -12,7 +12,9 @@ int strcmp(char *s1, char *s2);
 int strcmpN(char *s1, char *s2, int n);
 int atoi(char *s);
 void memmove(char *s1, char *s2, int n);
+void memset(char *s, char c, int n);
 
 #define STRCMP(a, b) strcmp((char*)a, (char*)b)
 #define STRCMPN(a, b, n) strcmpN((char*)a, (char*)b, n)
 #define MEMMOVE(a, b, n) memmove((char*)a, (char*)b, n)
+#define MEMSET(s, c, n) memset((char *)s, c, n)

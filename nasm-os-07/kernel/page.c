@@ -5,56 +5,63 @@
 #include "./page.h"
 #include "../cpu/x86.h"
 
-// 页表设置
-void install_page()
+void* alloc_pte_for_proc()
 {
-  kprintf("install page\n");
-  // 分配物理内存
-  // TODO 一次性分配出来的话内存占用较多，可以只创建一级页表
-  void *phy_addr = alloc_page(1, 1024 + 1, 0, 0);
+  kprintf("alloc_pte_for_proc start\n");
+  void *phy_addr = alloc_page(1, 5, 0, 0);
   if (phy_addr == NULL) {
-    kprintf("install_page alloc fail!\n");
-    return;
+    return NULL;
   }
-	//大小为1024个（每个4字节）共4096字节
-	uint32_t *page_dir = (uint32_t *) phy_addr;
-	uint32_t *first_page_table = (uint32_t *) ((char*)page_dir + 4096);
-  uint32_t *page_table = first_page_table;
-	//用于虚拟内存地址计算
-	uint32_t address = 0;
-	//处理所有页目录
-	for (int i = 0; i < 1024; i++) {
-		for (int j = 0; j < 1024; j++) {
-      // 前4MB
-      if (i <= 0) {
-			  page_table[j] = address | 3;
-      } else {
-			  page_table[j] = 0;
-      }
-			address += PAGE_ALIGN_SIZE;
-		}
-		page_dir[i] = ((uint32_t) page_table | 3);
-		page_table += 1024;
-	}
-  // 将页表占用的内存映射好
-  for (int i = 0; i < 1025; i++) {
-    int addr = (uint32_t)phy_addr + (i * 4096);
-    first_page_table[i + 1024] = addr | 3;
+  uint32_t pg_dir_phy_addr = (uint32_t)phy_addr;
+  uint32_t first_pde_phy_addr = (uint32_t)phy_addr + 1 * PAGE_ALIGN_SIZE;
+  uint32_t stack_pde_phy_addr = (uint32_t)phy_addr + 2 * PAGE_ALIGN_SIZE;
+  uint32_t stack_phy_addr = (uint32_t)phy_addr + 3 * PAGE_ALIGN_SIZE;
+  uint32_t unused_phy_addr = (uint32_t)phy_addr + 4 * PAGE_ALIGN_SIZE;
+  
+  // 这些页表只有物理地址, 要想维护必须先建立映射关系
+  uint32_t can_map_address = MAP_PAGE_TABLE_UNUSE;
+  uint32_t* map_address = (uint32_t*)can_map_address;
+
+  uint32_t* first_page_table = (uint32_t*)MAP_PAGE_TABLE_START;
+  kprintf("debug0: %x %x\n", first_page_table, *first_page_table);
+  // 2GB ~ 2GB+4M 去映射所有二级页表，如何做呢？ 只需要pg_dir[512] = pgdir | 3
+  uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (can_map_address / PAGE_ALIGN_SIZE));
+  kprintf("debug:%x %x\n", page_table, *page_table);
+  if (*page_table != 0) {
+    // 已被占用
+    return NULL;
   }
 
-	//设置cr3寄存器为页目录的值
-	set_cr3((uint32_t)phy_addr);
-
-  void *stack_phy_addr = alloc_page(1, 1, 0, 0);
-  first_page_table[262144-1] = (uint32_t)stack_phy_addr | 3;
-	//开启内存分页
-	open_mm_page();
-
-  static int reg_once = 0;
-  if (reg_once == 0) {
-    reg_once = 1;
-    register_interrupt_handler(14, page_fault_handler);
+  // 设置页目录
+  *page_table = pg_dir_phy_addr | 3;
+  for (int i = 0; i < 1024; i++) {
+    map_address[i] = 0;
   }
+  map_address[0] = first_pde_phy_addr | 3; // 第一个二级页表
+  map_address[MAP_STACK_PDE_IDX] = stack_pde_phy_addr | 3; // 虚拟地址空间1G处
+  map_address[MAP_PDE_IDX] = pg_dir_phy_addr | 3; // 虚拟地址空间2G处，这个操作有点奇葩
+  map_address[MAP_PG_DIR_PDE_IDX] = unused_phy_addr | 3; // 虚拟地址空间2G+4M处，这个操作有点奇葩
+
+  kprintf("alloc_pte_for_proc finish\n");
+  // 0~4M 映射0~4M
+  *page_table = first_pde_phy_addr | 3;
+  for (int i = 0; i < 1024; i++) {
+    map_address[i] = (i *  PAGE_ALIGN_SIZE) | 3;
+  }
+
+  // 2G+4M～2G+4M+4K的虚拟地址空间映射到页目录
+  *page_table = unused_phy_addr | 3;
+  map_address[0] = pg_dir_phy_addr;
+
+  // 栈地址  
+  *page_table = stack_pde_phy_addr | 3;
+  // 虚拟地址空间1G处
+  map_address[0] = (uint32_t)stack_phy_addr | 3;
+
+  // 设置回去
+  *page_table = 0; 
+  
+  return pg_dir_phy_addr;
 }
 
 //内存使用位图
@@ -186,7 +193,8 @@ void free_page_by_pid(uint32_t pid)
 
 uint32_t *find_page_table(uint32_t address)
 {
-	uint32_t *page_dir = (uint32_t *)0x400000;
+  // 虚拟地址空间2G + 4M映射了页目录
+	uint32_t *page_dir = (uint32_t *)MAP_PAGE_TABLE_PG_DIR;
 
   // 高10位存放的是dir offset
   uint32_t page_dir_offset = address >> 22;
@@ -194,15 +202,19 @@ uint32_t *find_page_table(uint32_t address)
   uint32_t page_table_offset = (address >> 12) & 0x3FF;
   kprintf("find_page_table: %x %d %d %x\n", page_dir, page_dir_offset, page_table_offset, address);
   uint32_t page_table_base = page_dir[page_dir_offset];
+  // 注意这里的page_table_base非0的话也是物理地址，不能直接使用  
+  if (page_table_base == 0) {
+    void *new_phy_page = alloc_page(1, 1, 0, 0);
+    page_dir[page_dir_offset] = (uint32_t)new_phy_page | 3;
+  }
   // 去除低位的flags
-  page_table_base = (page_table_base >> 12) << 12;
-  uint32_t *page_table = (uint32_t*)page_table_base + page_table_offset;
+  uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (page_dir_offset * 1024 + page_table_offset));
   kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir[page_dir_offset], page_table_base, page_table);
   //asm volatile("hlt");
   return page_table;
 }
 
-void bind_addr_phy_page(uint32_t addr)
+void map_pte(uint32_t addr)
 {
   // to find page table
   uint32_t *page_table = find_page_table(addr);  
@@ -224,6 +236,7 @@ void page_fault_handler(registers_t *r)
   uint32_t faulting_address;
   asm volatile("mov %%cr2, %0" : "=r" (faulting_address));   
   kprintf("--page fault %x!\n", faulting_address);
+  hang();
   
   // page not present?
   int present = r->err_code & 0x1;
@@ -236,5 +249,5 @@ void page_fault_handler(registers_t *r)
   // caused by an instruction fetch?
   int id = r->err_code & 0x10;
 
-  bind_addr_phy_page(faulting_address);
+  map_pte(faulting_address);
 }

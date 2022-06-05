@@ -5,5 +5,6 @@ void *hd_setup(void *addr);
 void user_input(char *input);
 void startothers();
 void mpenter();
-void init_entry_pg();
+void init_entry_page();
+void scheduler();
 

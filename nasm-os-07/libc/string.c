@@ -137,4 +137,9 @@ void memmove(char *s1, char* s2, int n)
   }
 }
 
-
+void memset(char *s, char c, int n)
+{
+  for (int i = 0; i < n; i++) {
+    s[i] = c;
+  }
+}

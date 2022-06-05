@@ -41,7 +41,8 @@ void kernel_main() {
   // phy memory mgr
   install_alloc();
 
-  init_entry_pg();
+  // 初始化processor启动过渡页表
+  init_entry_page();
   
   // start other processor
   startothers();
@@ -49,19 +50,16 @@ void kernel_main() {
   set_cr3((uint32_t)entry_pg_dir);
   kprintf("cr3:%x esp:%x\n",cr3(), esp());
   open_mm_page();
+  register_interrupt_handler(14, page_fault_handler);
 
   kprintf("debug ebp=%x esp=%x\n", ebp(), esp());
 
-  //char *p = (char*)0x6000;
- // kprintf("ddd>%x ", p);
- // kprint_hex_n(p, 10);
- // kprintf("\n");
-
-  //asm volatile("cli");
-  //newb();
-
-  kprint("los> ");
-  // never return because we have change stack reg
+  //first proc
+  struct proc* first_p = alloc_proc();
+  if (first_p != NULL) {
+    kprintf("alloc first proc:%x %d\n", first_p, first_p->pid);
+  }
+  scheduler();
   hang();
 }
 
@@ -200,6 +198,7 @@ void mpenter()
   open_mm_page();
   
   cc->started = 1;
+  scheduler();
   hang();
 }
 
@@ -210,10 +209,20 @@ uint32_t entry_pg_dir[1024];
 __attribute__((__aligned__(4096)))
 uint32_t entry_pg_table[1024];
 
-void init_entry_pg()
+__attribute__((__aligned__(4096)))
+uint32_t reserve_for_map[1024];
+
+void init_entry_page()
 {
+  MEMSET(entry_pg_dir, 0 , 4096);
+  MEMSET(entry_pg_table, 0 , 4096);
+  MEMSET(reserve_for_map, 0 , 4096);
   entry_pg_dir[0] = (uint32_t)entry_pg_table | 3;
-  for (int i=0;i<1024;i++) {
+  entry_pg_dir[MAP_PDE_IDX] = (uint32_t)entry_pg_dir | 3;
+  entry_pg_dir[MAP_PG_DIR_PDE_IDX] = (uint32_t)reserve_for_map | 3;
+  // virtual address 0~4M -> phy address 0~4M 
+  for (int i = 0; i < 1024; i++) {
     entry_pg_table[i] = (i * 4096) | 3;
   }
+  reserve_for_map[0] = (uint32_t)entry_pg_dir | 3; 
 }
