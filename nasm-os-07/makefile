@@ -1,7 +1,7 @@
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c libc/*.c mm/*.c)
 HEADERS = $(wildcard kernel/*.h drivers/*.h cpu/*.h libc/*.h mm/*.h)
 # Nice syntax for file extension replacement
-OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o} 
+OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o kernel/swtch.o} 
 
 # Change this if your cross-compiler is somewhere else
 CC = gcc -fno-pic
@@ -13,7 +13,6 @@ CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
 # First rule is run by default
 os-image.bin: boot/bootsect.bin boot/entryother.bin kernel.bin padding.bin
 	cat $^ > os-image.bin
-
 
 padding.bin:
 	dd if=/dev/zero of=./padding.bin bs=64k count=1

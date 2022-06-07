@@ -51,9 +51,11 @@ struct proc {
   enum procstate state;        // Process state
   uint32_t pgdir;              // Page table
   uint32_t stack;              // Bottom of stack for this process
-  struct context *context;     // swtch() here to run process
+  //struct context *context;     // swtch() here to run process
   int killed;                  // If non-zero, have been killed
   char name[16];               // Process name (debugging)
+  uint32_t entry;
+  uint32_t stack_store;
 };
 
 static inline unsigned int readeflags(void)
@@ -65,3 +67,4 @@ static inline unsigned int readeflags(void)
 
 struct proc* alloc_proc();
 void test_proc();
+void swtch(uint32_t, uint32_t);

@@ -4,17 +4,24 @@
 
 #define UNUSED(x) (void)(x)
 
+static inline uint32_t cs()
+{
+  uint32_t cs;
+  __asm__ volatile("movl %%cs, %0" : "=a" (cs) : );
+  return cs;
+}
+
 static inline uint32_t ebp()
 {
   uint32_t ebp;
-  __asm__ volatile("movl  %%ebp, %0" : "=a" (ebp) : );
+  __asm__ volatile("movl %%ebp, %0" : "=a" (ebp) : );
   return ebp;
 }
 
 static inline uint32_t esp()
 {
   uint32_t esp;
-  __asm__ volatile("movl  %%ebp, %0" : "=a" (esp) : );
+  __asm__ volatile("movl %%ebp, %0" : "=a" (esp) : );
   return esp;
 }
 

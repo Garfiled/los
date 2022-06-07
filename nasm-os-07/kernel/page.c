@@ -24,9 +24,10 @@ void* alloc_pte_for_proc()
 
   uint32_t* first_page_table = (uint32_t*)MAP_PAGE_TABLE_START;
   kprintf("debug0: %x %x\n", first_page_table, *first_page_table);
-  // 2GB ~ 2GB+4M 去映射所有二级页表，如何做呢？ 只需要pg_dir[512] = pgdir | 3
+  // 2GB ~ 2GB+4M 映射所有二级页表，如何做到的呢？ 只需要pg_dir[512] = pg_dir_phy | 3
   uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (can_map_address / PAGE_ALIGN_SIZE));
   kprintf("debug:%x %x\n", page_table, *page_table);
+  // 找到当前未做映射的page_table， TODO 处理并发问题
   if (*page_table != 0) {
     // 已被占用
     return NULL;
@@ -207,7 +208,6 @@ uint32_t *find_page_table(uint32_t address)
     void *new_phy_page = alloc_page(1, 1, 0, 0);
     page_dir[page_dir_offset] = (uint32_t)new_phy_page | 3;
   }
-  // 去除低位的flags
   uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (page_dir_offset * 1024 + page_table_offset));
   kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir[page_dir_offset], page_table_base, page_table);
   //asm volatile("hlt");
