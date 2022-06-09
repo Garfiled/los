@@ -46,6 +46,8 @@ void kernel_main() {
   set_cr3((uint32_t)entry_pg_dir);
   kprintf("cr3:%x esp:%x\n",cr3(), esp());
 
+  char *tmp = 24*1024*1024;
+  MEMMOVE(tmp, entry_pg_dir2, 4096);
   open_mm_page();
   register_interrupt_handler(14, page_fault_handler);
 
@@ -64,7 +66,6 @@ loop1:
     kprintf("alloc first proc:%x %d\n", first_p, first_p->pid);
   }
   scheduler();
-  hang();
 }
 
 void* hd_setup(void* addr) {
@@ -95,6 +96,7 @@ void print_hd() {
     kprintf("%d %d %d %d %d %d\n", i, hd[i].cyl, hd[i].head, hd[i].sector, hd[i].sector_bytes, hd[i].nsectors);
 	}
 }
+
 void print_mem(char s[])
 {
 	uint32_t mem = atoi(s);

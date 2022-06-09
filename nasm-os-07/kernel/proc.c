@@ -4,6 +4,7 @@
 #include "../cpu/x86.h"
 #include <stddef.h>
 #include "kernel.h"
+#include "../libc/string.h"
 
 
 struct {
@@ -54,7 +55,8 @@ found:
     kprintf("alloc_pte_for_proc fail\n");
     return NULL;
   }
-  p->stack = MAP_STACK_ADDR;
+  // stack 1G+3K
+  p->stack = MAP_STACK_ADDR + 3 * 1024;
   p->entry = test_proc;
   //MEMSET(p->context, 0, sizeof *p->context);
   p->killed = 0;
@@ -80,14 +82,11 @@ void scheduler(void)
         continue;
       
       p->state = RUNNING;
-      kprintf("scheduler:%x %x %x %d\n", p->pgdir, p, esp(), p->pid);
-      //set_cr3(p->pgdir);
-      set_cr3(entry_pg_dir2);
+      kprintf("scheduler> pid:%d pgdir:%x stack:%x esp:%x\n", p->pid, p->pgdir, p->stack, esp());
+      set_cr3(p->pgdir);
       kprintf("cr3:%x esp:%x\n",cr3(), esp());
       
-      //hang();
-      uint32_t esp1 = 4 * 1024 * 1024 - 4096;
-      swtch(esp1, p->entry);
+      swtch(p->stack, p->entry);
       // It should have changed its p->state before coming back.
       set_cr3(entry_pg_dir);
     }

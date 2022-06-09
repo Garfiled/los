@@ -53,3 +53,11 @@ static inline void open_mm_page()
   );
 }
 
+static inline void close_mm_page()
+{
+  __asm__ volatile(
+      "movl %cr0, %eax;"
+      "and $~(1 << 31), %eax;"
+      "movl %eax, %cr0;"
+  );
+}

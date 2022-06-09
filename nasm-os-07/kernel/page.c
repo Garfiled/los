@@ -4,6 +4,7 @@
 #include "../libc/kprint.h"
 #include "./page.h"
 #include "../cpu/x86.h"
+#include "../libc/string.h"
 
 void* alloc_pte_for_proc()
 {
@@ -35,33 +36,48 @@ void* alloc_pte_for_proc()
 
   // 设置页目录
   *page_table = pg_dir_phy_addr | 3;
-  for (int i = 0; i < 1024; i++) {
-    map_address[i] = 0;
-  }
+  MEMSET(map_address, 0 , 4096);
   map_address[0] = first_pde_phy_addr | 3; // 第一个二级页表
   map_address[MAP_STACK_PDE_IDX] = stack_pde_phy_addr | 3; // 虚拟地址空间1G处
   map_address[MAP_PDE_IDX] = pg_dir_phy_addr | 3; // 虚拟地址空间2G处，这个操作有点奇葩
   map_address[MAP_PG_DIR_PDE_IDX] = unused_phy_addr | 3; // 虚拟地址空间2G+4M处，这个操作有点奇葩
 
-  kprintf("alloc_pte_for_proc finish\n");
+  asm("invlpg (%0)" : :  "r"(map_address));
   // 0~4M 映射0~4M
   *page_table = first_pde_phy_addr | 3;
+  MEMSET(map_address, 0 , 4096);
   for (int i = 0; i < 1024; i++) {
     map_address[i] = (i *  PAGE_ALIGN_SIZE) | 3;
   }
 
+  asm("invlpg (%0)" : :  "r"(map_address));
   // 2G+4M～2G+4M+4K的虚拟地址空间映射到页目录
   *page_table = unused_phy_addr | 3;
+  MEMSET(map_address, 0 , 4096);
   map_address[0] = pg_dir_phy_addr;
 
   // 栈地址  
+  asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = stack_pde_phy_addr | 3;
   // 虚拟地址空间1G处
+  MEMSET(map_address, 0 , 4096);
   map_address[0] = (uint32_t)stack_phy_addr | 3;
 
   // 设置回去
+  asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = 0; 
-  
+
+  kprintf("debug>%x %d %x\n", esp(), ebp(), pg_dir_phy_addr); 
+
+  /*
+  kprintf("close_mm_page\n");
+  close_mm_page();
+  uint32_t *pp = (uint32_t*)pg_dir_phy_addr;
+  kprintf("pde entry:%x %x %x\n", pp[0], pp[1], pp[1023]);
+  uint32_t *ppp = (uint32_t*)first_pde_phy_addr;
+  kprintf("pte entry:%x %x %x\n", ppp[0], ppp[1], ppp[1023]);
+  hang();  
+  */
   return pg_dir_phy_addr;
 }
 
@@ -76,7 +92,6 @@ uint8_t *mmap = NULL;
  * 其它程序所使用的内存页面被设置为其任务ID
  */
 uint32_t *map_process = NULL;
-uint32_t find_index = MMAP_USED_SIZE;
 
 /*
  * install_alloc : 安装申请内存位图

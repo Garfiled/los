@@ -11,10 +11,12 @@ swtch:
   push edi
 
   mov esp, eax
+
   pop edi
   pop esi
   pop ebx
   pop ebp
+
   call edx
 
   pop edi

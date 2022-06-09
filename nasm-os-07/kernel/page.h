@@ -52,7 +52,7 @@
  * Kernel所在页目录及页表地址 [0x600000, 0xa01000)
  * 从0x1000000以下为0x1000个内存页
  */
-#define MMAP_USED_SIZE		(0x1000)
+#define MMAP_USED_SIZE		(0x1800)
 
 //map起始地址
 #define MMAP				(0x100000)
