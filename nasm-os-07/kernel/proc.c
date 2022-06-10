@@ -65,11 +65,23 @@ found:
   return p;
 }
 
+void release_proc(struct proc* p)
+{
+  kprintf("release_proc\n");
+  p->state = ZOMBIE;
+  p->pid = 0;
+  p->stack = 0;
+  p->entry = 0;
+  p->killed = 0;
+ 
+  release_pte_for_proc(p->pgdir); 
+  p->state = UNUSED;
+}
+
 void test_proc()
 {
   kprintf("test_proc\n");
   kprintf("cr3:%x esp:%x\n",cr3(), esp());
-  hang();
 }
 
 void scheduler(void)
@@ -88,7 +100,8 @@ void scheduler(void)
       
       swtch(p->stack, p->entry);
       // It should have changed its p->state before coming back.
-      set_cr3(entry_pg_dir);
+      set_cr3(entry_pg_dir);      
+      release_proc(p);
     }
   }
 }

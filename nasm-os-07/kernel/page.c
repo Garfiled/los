@@ -81,6 +81,37 @@ void* alloc_pte_for_proc()
   return pg_dir_phy_addr;
 }
 
+void release_pte_for_proc(uint32_t phy_addr)
+{
+  uint32_t can_map_address = MAP_PAGE_TABLE_UNUSE;
+  uint32_t* map_address = (uint32_t*)can_map_address;
+
+  uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (can_map_address / PAGE_ALIGN_SIZE));
+  // 找到当前未做映射的page_table， TODO 处理并发问题
+  if (*page_table != 0) {
+    // 已被占用
+    return NULL;
+  }
+  for (int i=1; i < 1024; i++) {
+    asm("invlpg (%0)" : :  "r"(map_address));
+    *page_table = phy_addr | 3;
+    uint32_t pde_addr = map_address[i];
+    if (pde_addr == 0) {
+      continue;
+    }
+    asm("invlpg (%0)" : :  "r"(map_address));
+    *page_table = pde_addr; 
+    for (int j=0; j < 1024; j++) {
+      uint32_t pte_addr = map_address[j];
+      if (pte_addr > 0) {
+         free_page(pte_addr & (~0x3), 1);  
+      }
+    }
+  }
+  asm("invlpg (%0)" : :  "r"(map_address));
+  *page_table = 0; 
+}
+
 //内存使用位图
 uint8_t *mmap = NULL;
 

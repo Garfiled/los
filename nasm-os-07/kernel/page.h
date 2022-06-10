@@ -68,6 +68,7 @@ typedef struct isr_params {
 } isr_params_t;
 
 void* alloc_pte_for_proc();
+void free_pte_for_proc(uint32_t phy_addr);
 void map_pte(uint32_t addr);
 void page_fault_handler(registers_t *r);
 /*

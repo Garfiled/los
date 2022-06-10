@@ -41,7 +41,7 @@ void kernel_main() {
   init_entry_page();
   
   // start other processor
-  //startothers();
+  startothers();
 
   set_cr3((uint32_t)entry_pg_dir);
   kprintf("cr3:%x esp:%x\n",cr3(), esp());
@@ -204,8 +204,7 @@ void mpenter()
   open_mm_page();
   
   cc->started = 1;
-  //scheduler();
-  hang();
+  scheduler();
 }
 
 // boot page table
