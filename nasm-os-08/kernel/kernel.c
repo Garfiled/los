@@ -48,15 +48,9 @@ void kernel_main() {
 
   open_mm_page();
   register_interrupt_handler(14, page_fault_handler);
-
-  /*
-  kprintf("debug ebp=%x esp=%x cs=%x\n", ebp(), esp(), cs());
-  set_cr3((uint32_t)entry_pg_dir2);
-  kprintf("cr3:%x esp:%x\n",cr3(), esp());
-loop1:
-  goto loop1;
-  hang();
-  */
+  
+  // 初始化文件系统
+  init_file_system();
 
   //first proc
   struct proc* first_p = alloc_proc();
@@ -104,7 +98,7 @@ void print_mem(char s[])
   kprintf("\n");
 }
 
-void read_hd(char s[])
+void read_hd_cmd(char s[])
 {	
 	int start_sector = atoi(s);
 	//kprint_int(start_sector);
@@ -140,7 +134,7 @@ void user_input(char *input) {
   } else if (strcmp(input, "lshd")==0) {
     print_hd();
 	} else if (strcmpN(input, "readhd",6)==0) {
-		read_hd(input+7);
+		read_hd_cmd(input+7);
 	} else if (strcmpN(input, "checkhd",7)==0) {
 		check_hd_status();
 	} else if (strcmpN(input, "resethd",7)==0) {
@@ -228,32 +222,4 @@ void init_entry_page()
     entry_pg_table[i] = (i * 4096) | 3;
   }
   reserve_for_map[0] = (uint32_t)entry_pg_dir | 3; 
-
-  init_entry_page2();
-}
-
-
-// boot page table
-__attribute__((__aligned__(4096)))
-uint32_t entry_pg_dir2[1024];
-
-__attribute__((__aligned__(4096)))
-uint32_t entry_pg_table2[1024];
-
-__attribute__((__aligned__(4096)))
-uint32_t reserve_for_map2[1024];
-
-void init_entry_page2()
-{
-  MEMSET(entry_pg_dir2, 0 , 4096);
-  MEMSET(entry_pg_table2, 0 , 4096);
-  MEMSET(reserve_for_map2, 0 , 4096);
-  entry_pg_dir2[0] = (uint32_t)entry_pg_table2 | 3;
-  entry_pg_dir2[MAP_PDE_IDX] = (uint32_t)entry_pg_dir2 | 3;
-  entry_pg_dir2[MAP_PG_DIR_PDE_IDX] = (uint32_t)reserve_for_map2 | 3;
-  // virtual address 0~4M -> phy address 0~4M 
-  for (int i = 0; i < 1024; i++) {
-    entry_pg_table2[i] = (i * 4096) | 3;
-  }
-  reserve_for_map2[0] = (uint32_t)entry_pg_dir2 | 3; 
 }

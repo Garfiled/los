@@ -81,7 +81,7 @@ void* alloc_pte_for_proc()
   return pg_dir_phy_addr;
 }
 
-void release_pte_for_proc(uint32_t phy_addr)
+void free_pte_for_proc(uint32_t phy_addr)
 {
   uint32_t can_map_address = MAP_PAGE_TABLE_UNUSE;
   uint32_t* map_address = (uint32_t*)can_map_address;
@@ -241,22 +241,22 @@ void free_page_by_pid(uint32_t pid)
 uint32_t *find_page_table(uint32_t address)
 {
   // 虚拟地址空间2G + 4M映射了页目录
-	uint32_t *page_dir = MAP_PAGE_TABLE_PG_DIR;
+	uint32_t *page_dir_addr = MAP_PAGE_TABLE_PG_DIR;
 
   // 高10位存放的是dir offset
   uint32_t page_dir_offset = address >> 22;
   // 中间的10位存放的是page_table offset
   uint32_t page_table_offset = (address >> 12) & 0x3FF;
-  kprintf("find_page_table: %x %d %d %x\n", page_dir, page_dir_offset, page_table_offset, address);
-  uint32_t page_table_base = page_dir[page_dir_offset];
+  //kprintf("find_page_table:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
+  //kprintf("find_page_table: %x %d %d %x\n", page_dir_addr, page_dir_offset, page_table_offset, address);
+  uint32_t page_table_base = page_dir_addr[page_dir_offset];
   // 注意这里的page_table_base非0的话也是物理地址，不能直接使用  
   if (page_table_base == 0) {
     void *new_phy_page = alloc_page(1, 1, 0, 0);
-    page_dir[page_dir_offset] = (uint32_t)new_phy_page | 3;
+    page_dir_addr[page_dir_offset] = (uint32_t)new_phy_page | 3;
   }
   uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (page_dir_offset * 1024 + page_table_offset));
-  kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir[page_dir_offset], page_table_base, page_table);
-  //asm volatile("hlt");
+  kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir_addr[page_dir_offset], page_table_base, page_table);
   return page_table;
 }
 
@@ -274,7 +274,7 @@ void map_pte(uint32_t addr)
     return;
   }
   *page_table = (uint32_t)phy_page | 3;
-  kprintf("--bind_addr_phy_page succ %x %x\n", addr, phy_page);
+  kprintf("--map_pte succ %x %x\n", addr, phy_page);
 }
 
 void page_fault_handler(registers_t *r) 

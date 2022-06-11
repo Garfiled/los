@@ -209,7 +209,7 @@ void free_page_by_pid(uint32_t pid)
 
 uint32_t *find_page_table(uint32_t address)
 {
-	uint32_t *page_dir = (uint32_t *)0x400000;
+	uint32_t *page_dir = 0x400000;
 
   // 高10位存放的是dir offset
   uint32_t page_dir_offset = address >> 22;
