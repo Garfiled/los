@@ -1,10 +1,11 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "../drivers/screen.h"
-#include "../libc/kprint.h"
-#include "./page.h"
-#include "../cpu/x86.h"
-#include "../libc/string.h"
+#include "drivers/screen.h"
+#include "drivers/hd.h"
+#include "libc/kprint.h"
+#include "kernel/page.h"
+#include "cpu/x86.h"
+#include "libc/string.h"
 
 void* alloc_pte_for_proc()
 {
@@ -54,7 +55,7 @@ void* alloc_pte_for_proc()
   // 2G+4M～2G+4M+4K的虚拟地址空间映射到页目录
   *page_table = unused_phy_addr | 3;
   MEMSET(map_address, 0 , 4096);
-  map_address[0] = pg_dir_phy_addr;
+  map_address[0] = pg_dir_phy_addr | 3;
 
   // 栈地址  
   asm("invlpg (%0)" : :  "r"(map_address));
@@ -69,15 +70,6 @@ void* alloc_pte_for_proc()
 
   kprintf("debug>%x %d %x\n", esp(), ebp(), pg_dir_phy_addr); 
 
-  /*
-  kprintf("close_mm_page\n");
-  close_mm_page();
-  uint32_t *pp = (uint32_t*)pg_dir_phy_addr;
-  kprintf("pde entry:%x %x %x\n", pp[0], pp[1], pp[1023]);
-  uint32_t *ppp = (uint32_t*)first_pde_phy_addr;
-  kprintf("pte entry:%x %x %x\n", ppp[0], ppp[1], ppp[1023]);
-  hang();  
-  */
   return pg_dir_phy_addr;
 }
 
@@ -205,7 +197,7 @@ void* alloc_page(uint32_t process_id, uint32_t count, uint32_t can_swap, uint32_
 		mmap[start_with + i] = MM_USED | MM_CAN_SWAP; //(MM_USED | ((uint32_t) can_swap << 1) | ((uint32_t) is_dynamic << 2));
 		map_process[start_with + i] = process_id;
 	}
-  kprintf("alloc_page: addr=%x count=%d\n", ret, count);
+  //kprintf("alloc_page: addr=%x count=%d\n", ret, count);
 
 	//返回查找到内存地址
 	return ret;
@@ -242,13 +234,32 @@ uint32_t *find_page_table(uint32_t address)
 {
   // 虚拟地址空间2G + 4M映射了页目录
 	uint32_t *page_dir_addr = MAP_PAGE_TABLE_PG_DIR;
-
+  
+  //asm("invlpg (%0)" : :  "r"(page_dir_addr));
   // 高10位存放的是dir offset
   uint32_t page_dir_offset = address >> 22;
   // 中间的10位存放的是page_table offset
   uint32_t page_table_offset = (address >> 12) & 0x3FF;
   //kprintf("find_page_table:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
-  //kprintf("find_page_table: %x %d %d %x\n", page_dir_addr, page_dir_offset, page_table_offset, address);
+  //kprintf("find_page_table: %d %d %x\n", page_dir_offset, page_table_offset, address);
+  /*
+  if (open_debug) {
+    kprintf("debug>>%x %x\n", esp(), cr3());
+    pp = cr3();
+    kprintf("debug>>>:%x %x\n", pp, cr3());
+    asm volatile(
+      "movl %cr0, %eax;"
+      "and $~(1 << 31), %eax;"
+      "movl %eax, %cr0;"
+  );
+    asm volatile("movl %%eax, %%esp" :: "a"(0x400000));
+    kprintf("close_mm_page:%x\n", pp);
+    kprintf("pde entry>>>%x %x %x %x %x\n",pp, pp[0], pp[1], pp[512],pp[513]);
+    ppp = pp[513] - 0x3;
+    kprintf("entry>>>>%x %x\n", ppp, ppp[0]);
+    hang();
+  }
+  */
   uint32_t page_table_base = page_dir_addr[page_dir_offset];
   // 注意这里的page_table_base非0的话也是物理地址，不能直接使用  
   if (page_table_base == 0) {
@@ -256,7 +267,7 @@ uint32_t *find_page_table(uint32_t address)
     page_dir_addr[page_dir_offset] = (uint32_t)new_phy_page | 3;
   }
   uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (page_dir_offset * 1024 + page_table_offset));
-  kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir_addr[page_dir_offset], page_table_base, page_table);
+  //kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir_addr[page_dir_offset], page_table_base, page_table);
   return page_table;
 }
 
@@ -274,14 +285,14 @@ void map_pte(uint32_t addr)
     return;
   }
   *page_table = (uint32_t)phy_page | 3;
-  kprintf("--map_pte succ %x %x\n", addr, phy_page);
+  //kprintf("--map_pte succ %x %x\n", addr, phy_page);
 }
 
 void page_fault_handler(registers_t *r) 
 {
   uint32_t faulting_address;
   asm volatile("mov %%cr2, %0" : "=r" (faulting_address));   
-  kprintf("--page fault %x!\n", faulting_address);
+  //kprintf("--page fault %x!\n", faulting_address);
   
   // page not present?
   int present = r->err_code & 0x1;

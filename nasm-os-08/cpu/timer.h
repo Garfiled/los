@@ -1,8 +1,6 @@
-#ifndef TIMER_H
-#define TIMER_H
+#pragma once
 
-#include <stdint.h>
+#include "cpu/x86.h"
 
 void init_timer(uint32_t freq);
 
-#endif

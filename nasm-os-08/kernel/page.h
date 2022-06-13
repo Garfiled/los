@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../cpu/isr.h"
+#include "cpu/isr.h"
 #include <stdint.h>
 
 

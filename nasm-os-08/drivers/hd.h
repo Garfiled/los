@@ -1,10 +1,13 @@
 #pragma once
 
+extern int open_debug;
+
 void init_hd();
 void hd_rw(uint32_t,uint8_t, uint16_t,void *);
 void check_hd_status();
 void reset_hd_controller();
 void read_hd(char* buf, uint32_t offset, uint32_t size);
+void read_hd_split(char* buf, uint32_t offset, uint32_t size);
 
 //  LBS request address
 #define HD_PORT_DATA            0x1f0

@@ -1,9 +1,9 @@
-#include "timer.h"
-#include "isr.h"
-#include "ports.h"
-#include "../libc/function.h"
-#include "../drivers/screen.h"
-#include "../libc/kprint.h"
+#include "cpu/timer.h"
+#include "cpu/isr.h"
+#include "cpu/ports.h"
+#include "libc/function.h"
+#include "drivers/screen.h"
+#include "libc/kprint.h"
 
 uint32_t tick = 0;
 

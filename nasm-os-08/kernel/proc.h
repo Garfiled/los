@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "../kernel/mp.h"
-#include "../cpu/x86.h"
+#include "kernel/mp.h"
+#include "cpu/x86.h"
 
 #define NPROC        4096
 
@@ -65,6 +65,8 @@ static inline unsigned int readeflags(void)
   return eflags;
 }
 
-struct proc* alloc_proc();
+struct proc* alloc_proc(void *entry_func);
 void test_proc();
 void swtch(uint32_t, uint32_t);
+int process_exec(char *path, int argc, char *argv[]);
+int exec(char *path, int argc, char *argv[]);

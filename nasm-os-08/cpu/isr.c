@@ -1,12 +1,12 @@
-#include "isr.h"
-#include "idt.h"
-#include "../drivers/screen.h"
-#include "../drivers/keyboard.h"
-#include "../drivers/hd.h"
-#include "../libc/string.h"
-#include "timer.h"
-#include "ports.h"
-#include "../libc/kprint.h"
+#include "cpu/isr.h"
+#include "cpu/idt.h"
+#include "drivers/screen.h"
+#include "drivers/keyboard.h"
+#include "drivers/hd.h"
+#include "libc/string.h"
+#include "cpu/timer.h"
+#include "cpu/ports.h"
+#include "libc/kprint.h"
 
 isr_t interrupt_handlers[256];
 
@@ -132,7 +132,7 @@ void register_interrupt_handler(uint8_t n, isr_t handler) {
 }
 
 void irq_handler(registers_t *r) {
-    //kprintf("irq received interrupt: %d %s\n", r->int_no, exception_messages[r->int_no]);
+   // kprintf("irq received interrupt: %d %s\n", r->int_no, exception_messages[r->int_no]);
     /* After every interrupt we need to send an EOI to the PICs
      * or they will not send another interrupt again */
     if (r->int_no >= 40) port_byte_out(0xA0, 0x20); /* slave */

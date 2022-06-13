@@ -1,6 +1,5 @@
 #pragma once
 
-
 void int_to_ascii(int n, char *str);
 void _itoa(int n, char *str, int radix);
 void hex_to_ascii(int n, char *str);

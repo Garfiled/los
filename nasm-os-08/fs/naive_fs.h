@@ -1,10 +1,10 @@
 #pragma once
 
-#include "file.h"
+#include "fs/file.h"
 
 struct naive_file_meta 
 {
-  char filename[64];
+  char filename[4];
   uint32_t size;
   uint32_t offset;
 };

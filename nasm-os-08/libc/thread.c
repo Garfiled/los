@@ -1,8 +1,8 @@
 #include <stddef.h>
-#include "./thread.h"
-#include "../mm/alloc.h"
-#include "../libc/kprint.h"
-#include "../kernel/page.h"
+#include "libc/thread.h"
+#include "mm/alloc.h"
+#include "libc/kprint.h"
+#include "kernel/page.h"
 
 tcb_t* init_thread(char* name,
                    thread_func function,

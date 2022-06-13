@@ -1,15 +1,15 @@
-#include "naive_fs.h"
-#include "vfs.h"
-#include "../drivers/hd.h"
-#include "../libc/string.h"
-#include "../libc/kprint.h"
-#include "../cpu/x86.h"
-#include "../mm/alloc.h"
+#include "fs/naive_fs.h"
+#include "fs/vfs.h"
+#include "drivers/hd.h"
+#include "libc/string.h"
+#include "libc/kprint.h"
+#include "cpu/x86.h"
+#include "mm/alloc.h"
 #include <stddef.h>
 
 fs_t naive_fs;
 uint32_t file_num;
-naive_file_meta_t* file_metas;
+naive_file_meta_t file_metas[100];
 
 fs_t* get_naive_fs() 
 {
@@ -18,9 +18,10 @@ fs_t* get_naive_fs()
 
 static int32_t naive_fs_stat_file(char* filename, file_stat_t* stat) 
 {
+  kprintf("naive_fs_stat_file: %x %s\n", file_num, filename);
   for (uint32_t i = 0; i < file_num; i++) {
     naive_file_meta_t* meta = file_metas + i;
-    if (strcmp(meta->filename, filename) == 0) {
+    if (strcmpN(meta->filename, filename, sizeof(meta->filename)) == 0) {
       stat->size = meta->size;
       return 0;
     }
@@ -57,10 +58,11 @@ static int32_t naive_fs_list_dir(char* dir)
 
 static int32_t naive_fs_read_data(char* filename, char* buf, uint32_t start, uint32_t length) 
 {
+  kprintf("naive_fs_read_data>>>>>>>>>> %s %d\n", filename, sizeof(file_metas[0].filename));
   naive_file_meta_t* file_meta = NULL;
   for (uint32_t i = 0; i < file_num; i++) {
     naive_file_meta_t* meta = file_metas + i;
-    if (strcmp(meta->filename, filename) == 0) {
+    if (strcmpN(meta->filename, filename, sizeof(meta->filename)) == 0) {
       file_meta = meta;
       break;
     }
@@ -74,8 +76,15 @@ static int32_t naive_fs_read_data(char* filename, char* buf, uint32_t start, uin
   if (length > size) {
     length = size;
   }
-
-  read_hd(buf, naive_fs.partition.offset + offset + start, length);
+  kprintf("debug>>>>>> %x %x %x %x\n", naive_fs.partition.offset, offset, start, length);
+  reset_hd_controller();
+  read_hd_split(buf, naive_fs.partition.offset + offset + start, length);
+  kprint_hex_n(buf, 20);
+  kprintf("\n");
+  kprint_hex_n(buf+4096, 20);
+  kprintf("\n");
+  kprint_hex_n(buf+8192, 20);
+  kprintf("\n");
   return length;  
 }
 
@@ -101,14 +110,17 @@ void init_naive_fs()
   naive_fs.list_dir = naive_fs_list_dir;
 
   read_hd((char*)&file_num, 0 + naive_fs.partition.offset, sizeof(uint32_t));
-  kprintf("file_num:%d\n", file_num);
-  hang();
+  kprintf("file_num:%d %x\n", file_num, file_num);
+  // 不知道这里为什么需要reset HD controller, 否则读取出来的值都是0
+  reset_hd_controller();
 
   uint32_t meta_size = file_num * sizeof(naive_file_meta_t);
-  file_metas = (naive_file_meta_t*)alloc_mm(meta_size);
+  // 如果通过alloc_mm申请的话，其他进程看不到
+  //file_metas = (naive_file_meta_t*)alloc_mm(meta_size);
   read_hd((char*)file_metas, 4 + naive_fs.partition.offset, meta_size);
-  //for (uint32_t i = 0; i < file_num; i++) {
-  //  naive_file_meta_t* meta = file_metas + i;
-  //}
+  for (uint32_t i = 0; i < file_num; i++) {
+    naive_file_meta_t* meta = file_metas + i;
+    kprintf("file name=%s offset=%d size=%d\n", meta->filename, meta->offset, meta->size);
+  }
 }
 

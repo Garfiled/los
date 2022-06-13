@@ -1,11 +1,11 @@
-#include "proc.h"
-#include "page.h"
-#include "../libc/kprint.h"
-#include "../cpu/x86.h"
-#include <stddef.h>
-#include "kernel.h"
-#include "../libc/string.h"
-
+#include "libc/kprint.h"
+#include "libc/string.h"
+#include "fs/file.h"
+#include "mm/alloc.h"
+#include "kernel/proc.h"
+#include "kernel/page.h"
+#include "kernel/kernel.h"
+#include "kernel/elf.h"
 
 struct {
   struct proc proc[NPROC];
@@ -37,7 +37,7 @@ struct cpu* mycpu(void)
   return NULL;
 }
 
-struct proc* alloc_proc()
+struct proc* alloc_proc(void *entry_func)
 {
   struct proc* p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -57,7 +57,7 @@ found:
   }
   // stack 1G+3K
   p->stack = MAP_STACK_ADDR + 3 * 1024;
-  p->entry = test_proc;
+  p->entry = entry_func;
   //MEMSET(p->context, 0, sizeof *p->context);
   p->killed = 0;
   
@@ -104,4 +104,46 @@ void scheduler(void)
       release_proc(p);
     }
   }
+}
+
+int process_exec(char *path, int argc, char *argv[])
+{
+  kprintf("process_exec>\n");
+  alloc_proc(exec);
+  return 0;
+}
+
+int exec(char *path, int argc, char *argv[])
+{
+  kprintf("exec>>>>>>>>>>>>>>>>\n");
+  path = "hell";
+
+    // Read elf binary file.
+  file_stat_t stat;
+  if (stat_file(path, &stat) != 0) {
+    kprintf("Command %s not found\n", path);
+    return -1;
+  }
+  uint32_t size = stat.size;
+  kprintf("read_file: name=%s size=%d\n", path, stat.size);
+  char* read_buffer = (char*)alloc_mm(size);
+  if (read_file(path, read_buffer, 0, size) != size) {
+    kprintf("Failed to load cmd %s\n", path);
+    free_mm(read_buffer);
+    return -1;
+  }
+  
+  kprintf("load_elf>>>>>>>>>>>>>>>>\n");
+  // Load elf binary.
+  uint32_t exec_entry;
+  if (load_elf(read_buffer, &exec_entry)) {
+    kprintf("load elf fail\n");
+    return -1;
+  }
+  
+  kprintf("call_elf>>>>>>>>>>>>>>>>%x\n", exec_entry);
+  kprint_hex_n((char*)exec_entry, 20);
+  asm volatile("movl %%eax, %%edx" :: "a"(exec_entry)); 
+  asm volatile("call %edx");
+  return 0;
 }

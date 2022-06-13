@@ -1,7 +1,7 @@
-#include "./alloc.h"
+#include "mm/alloc.h"
+#include "kernel/page.h"
 #include <stddef.h>
 #include <stdint.h>
-#include "../kernel/page.h"
 
 /*
  * alloc_mm : 申请内存
@@ -9,16 +9,29 @@
  * return : void*返回申请地址，NULL代表申请失败
  */
 
+static uint32_t allocated = 20 * 1024 * 1024;
+
 void* alloc_mm(int size)
 {
-  static uint32_t allocated = 20 * 1024 * 1024;
-  //uint32_t address = allocated;
-  void * ret = (void*)allocated;
-  allocated += 4096;
-  //uint32_t address = 16 * 1024 * 1024;
-  return ret; 
+  uint32_t addr = allocated;
+  allocated += size;
+  kprintf("alloc_mm allocated=%x size=%x %x\n", allocated, size, addr);
+  return addr; 
 }
 
+void* alloc_mm_align(int size)
+{
+  if (allocated % 4096 != 0) {
+    allocated = (allocated / 4096 + 1) * 4096;
+  }
+  if (size % 4096 != 0) {
+    size = (size / 4096 + 1) * 4096;
+  }
+  uint32_t addr = allocated;
+  allocated += size;
+  kprintf("alloc_mm_align allocated=%x size=%x %x\n", allocated, size, addr);
+  return addr; 
+}
 /*
  * free_mm : 释放内存
  *  - void* addr : 释放地址

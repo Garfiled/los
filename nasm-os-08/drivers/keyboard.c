@@ -1,10 +1,10 @@
-#include "keyboard.h"
-#include "../cpu/ports.h"
-#include "../cpu/isr.h"
-#include "screen.h"
-#include "../libc/string.h"
-#include "../libc/function.h"
-#include "../kernel/kernel.h"
+#include "drivers/keyboard.h"
+#include "cpu/ports.h"
+#include "cpu/isr.h"
+#include "drivers/screen.h"
+#include "libc/string.h"
+#include "libc/function.h"
+#include "kernel/kernel.h"
 #include <stdint.h>
 #include <stdbool.h>
 

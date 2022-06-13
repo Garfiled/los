@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define UNUSED(x) (void)(x)
 
@@ -21,8 +22,15 @@ static inline uint32_t ebp()
 static inline uint32_t esp()
 {
   uint32_t esp;
-  __asm__ volatile("movl %%ebp, %0" : "=a" (esp) : );
+  __asm__ volatile("movl %%esp, %0" : "=a" (esp) : );
   return esp;
+}
+
+static inline uint32_t edx()
+{
+  uint32_t edx;
+  __asm__ volatile("movl %%edx, %0" : "=a" (edx) : );
+  return edx;
 }
 
 static inline void hang()
@@ -40,7 +48,7 @@ static inline void set_cr3(uint32_t cr3)
 static inline uint32_t cr3()
 {
   uint32_t cr3;
-  __asm__ volatile("movl  %%cr3, %0" : "=a" (cr3) : );
+  __asm__ volatile("movl %%cr3, %0" : "=a" (cr3) : );
   return cr3;
 }
 

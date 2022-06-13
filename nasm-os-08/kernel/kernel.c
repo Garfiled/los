@@ -1,17 +1,17 @@
-#include "../cpu/isr.h"
-#include "../drivers/screen.h"
-#include "../drivers/hd.h"
-#include "../libc/string.h"
-#include "../libc/mem.h"
-#include "../libc/kprint.h"
-#include "../mm/alloc.h"
-#include "../cpu/x86.h"
+#include "cpu/isr.h"
+#include "drivers/screen.h"
+#include "drivers/hd.h"
+#include "libc/string.h"
+#include "libc/mem.h"
+#include "libc/kprint.h"
+#include "mm/alloc.h"
+#include "cpu/x86.h"
 
-#include "mp.h"
-#include "kernel.h"
-#include "page.h"
-#include "proc.h"
-#include "lapic.h"
+#include "kernel/mp.h"
+#include "kernel/kernel.h"
+#include "kernel/page.h"
+#include "kernel/proc.h"
+#include "kernel/lapic.h"
 
 #define HD_NUM 2
 #define SYSTEM_PARAM_ADDR 0x9000
@@ -24,6 +24,8 @@ void kernel_main() {
   kprintf("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
   isr_install();
   irq_install();
+
+  init_syscall();
 
   //asm("int $2");
   //asm("int $3");
@@ -41,7 +43,7 @@ void kernel_main() {
   init_entry_page();
   
   // start other processor
-  startothers();
+  //startothers();
 
   set_cr3((uint32_t)entry_pg_dir);
   kprintf("cr3:%x esp:%x\n",cr3(), esp());
@@ -53,10 +55,12 @@ void kernel_main() {
   init_file_system();
 
   //first proc
-  struct proc* first_p = alloc_proc();
-  if (first_p != NULL) {
-    kprintf("alloc first proc:%x %d\n", first_p, first_p->pid);
-  }
+  //struct proc* first_p = alloc_proc(test_proc);
+  //if (first_p != NULL) {
+  //  kprintf("alloc first proc:%x %d\n", first_p, first_p->pid);
+  //}
+
+  process_exec("hell", 0, NULL);
   scheduler();
 }
 

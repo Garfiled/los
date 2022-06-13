@@ -6,6 +6,7 @@
  * return : void*返回申请地址，NULL代表申请失败
  */
 void* alloc_mm(int size);
+void* alloc_mm_align(int size);
 
 /*
  * free_mm : 释放内存

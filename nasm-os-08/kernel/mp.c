@@ -2,12 +2,12 @@
 // Search memory for MP description structures.
 // http://developer.intel.com/design/pentium/datashts/24201606.pdf
 
-#include "mp.h"
-#include "proc.h"
-#include "lapic.h"
-#include "../libc/kprint.h"
-#include "../libc/string.h"
-#include "../cpu/ports.h"
+#include "kernel/mp.h"
+#include "kernel/proc.h"
+#include "kernel/lapic.h"
+#include "libc/kprint.h"
+#include "libc/string.h"
+#include "cpu/ports.h"
 
 struct cpu cpus[NCPU];
 int ncpu;

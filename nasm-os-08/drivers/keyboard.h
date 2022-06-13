@@ -1,3 +1,5 @@
+#pragma once
+
 #define LeftShift 0x2A
 #define RightShift 0x36
 #define Enter 0x1C

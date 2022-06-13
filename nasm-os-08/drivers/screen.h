@@ -1,5 +1,4 @@
-#ifndef SCREEN_H
-#define SCREEN_H
+#pragma once
 
 #define VIDEO_ADDRESS 0xb8000
 #define MAX_ROWS 25
@@ -21,5 +20,3 @@ void kprint_int(int val);
 void kprint_hex(char *message);
 void kprint_hex_n(char *message, int n);
 void kprint_char(char c);
-
-#endif

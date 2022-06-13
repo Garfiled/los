@@ -1,13 +1,11 @@
-#include "../cpu/isr.h"
-#include "../cpu/ports.h"
-#include "../libc/function.h"
-#include "../libc/string.h"
-#include "../libc/kprint.h"
-#include "../drivers/screen.h"
-#include "../drivers/hd.h"
-#include "../mm/alloc.h"
-#include <stdint.h>
-
+#include "cpu/isr.h"
+#include "cpu/ports.h"
+#include "libc/function.h"
+#include "libc/string.h"
+#include "libc/kprint.h"
+#include "drivers/screen.h"
+#include "drivers/hd.h"
+#include "mm/alloc.h"
 
 struct hd_request 
 {
@@ -17,29 +15,14 @@ struct hd_request
 	void *buf;
 };
 
+int open_debug = 0;
+
 static struct hd_request curr_hd_request;
 
 static void hd_interrupt(registers_t *regs) {
   UNUSED(regs);
-	uint8_t status = port_byte_in(HD_PORT_STATUS);
-	kprintf("\n--hd_interrupt status:%d\n", status);
-
-  if (curr_hd_request.cmd == HD_READ) {
-    kprintf("--port_read finish %x\n", curr_hd_request.buf);
-  } else if (curr_hd_request.cmd == HD_WRITE) {
-    kprintf("--port_write finish %x\n", curr_hd_request.buf);
-  }
-	//读取数据
-	if (curr_hd_request.cmd == HD_READ) {
-	  kprint("--read from hd: ");
-	  kprint_hex_n((char*)curr_hd_request.buf, 10);
-	  kprint("\n");
-	}
-	//写入数据
-	else if (curr_hd_request.cmd == HD_WRITE) {
-	}
-  free_mm(curr_hd_request.buf);
-  kprint(">");
+	//uint8_t status = port_byte_in(HD_PORT_STATUS);
+	//kprintf("--hd_interrupt status:%d\n", status);
 }
 
 void init_hd(uint32_t freq) {
@@ -64,18 +47,16 @@ void init_hd(uint32_t freq) {
 
 void hd_wait_ready()
 {
+  // 等待设备空闲
+	while (port_byte_in(HD_PORT_STATUS) < 0 ) {
+	}
 	while ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40) {
 	}
 }
 
-void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
+void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
 {
-  /*
-	uint8_t hd_status = port_byte_in(HD_PORT_STATUS);
-  kprint("hd_status: ");
-  kprint_int(hd_status);
-  kprint("\n");
-  */
+  kprintf("hd_rw: %x %x %x %x\n", lba, cmd, nsects, buf);
   hd_wait_ready();
 	curr_hd_request.lba = lba;
 	curr_hd_request.cmd = cmd;
@@ -92,7 +73,7 @@ void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
 	lba3 |= 0xe0; // 1110 0000
 
 	//发送读写命令
-	port_byte_out(HD_PORT_SECT_COUNT,nsects);
+	port_byte_out(HD_PORT_SECT_COUNT, nsects);
 	port_byte_out(HD_PORT_LBA0, lba0);
 	port_byte_out(HD_PORT_LBA1, lba1);
 	port_byte_out(HD_PORT_LBA2, lba2);
@@ -102,7 +83,7 @@ void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
   hd_wait_ready();
  
   if (curr_hd_request.cmd == HD_READ) {
-		port_read(HD_PORT_DATA,curr_hd_request.buf, curr_hd_request.nsects * 256);
+		port_read(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
   } else if (curr_hd_request.cmd == HD_WRITE) {
 		port_write(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
   } 
@@ -110,21 +91,44 @@ void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
 
 void read_hd(char* buf, uint32_t offset, uint32_t size)
 {
-  if (offset % 4096 == 0 && size % 4096 == 0) {
-    hd_rw(offset/512, HD_READ, size/512, buf);
+  uint32_t offset_align = offset / 4096 * 4096;
+  uint32_t size_align = 0;
+  if ((offset + size - offset_align) % 4096 == 0) {
+    size_align = offset + size - offset_align;
   } else {
-    uint32_t offset_align = offset / 4096 * 4096;
-    uint32_t size_align = 0;
-    if ((offset + size - offset_align) % 4096 == 0) {
-      size_align = offset + size - offset_align;
-    } else {
-      size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
-    }
-    void *new_buf = alloc_mm(size_align);
-    hd_rw(offset_align/512, HD_READ, size_align/512, new_buf); 
-    MEMMOVE(buf, new_buf + offset - offset_align, size);
-    free_mm(new_buf);
+    size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
   }
+  char *buf_align = alloc_mm_align(size_align);
+  kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
+  hd_rw(offset_align/512, HD_READ, size_align/512, buf_align); 
+  kprint("--read_hd_data: ");
+  kprint_hex_n((char*)curr_hd_request.buf, 10);
+  kprint("\n");
+  MEMMOVE(buf, buf_align + offset - offset_align, size);
+  free_mm(buf_align);
+}
+
+void read_hd_split(char* buf, uint32_t offset, uint32_t size)
+{
+  uint32_t offset_align = offset / 4096 * 4096;
+  uint32_t size_align = 0;
+  if ((offset + size - offset_align) % 4096 == 0) {
+    size_align = offset + size - offset_align;
+  } else {
+    size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
+  }
+  char *buf_align = alloc_mm_align(size_align);
+  kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
+  if (size_align > 512) {
+    for (int i=0;i<size_align/512;i++) {
+      hd_rw((offset_align + 512 * i)/512, HD_READ, 512/512, buf_align + i * 512); 
+    }
+  }
+  kprint("--read_hd_data: ");
+  kprint_hex_n((char*)curr_hd_request.buf, 10);
+  kprint("\n");
+  MEMMOVE(buf, buf_align + offset - offset_align, size);
+  free_mm(buf_align);
 }
 
 void check_hd_status()

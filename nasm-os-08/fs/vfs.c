@@ -1,5 +1,5 @@
-#include "../fs/vfs.h"
-#include "../fs/naive_fs.h"
+#include "fs/vfs.h"
+#include "fs/naive_fs.h"
 
 // ***************************** root fs APIs *********************************
 static fs_t* get_fs(char* path) {

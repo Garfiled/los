@@ -1,7 +1,7 @@
-#include "screen.h"
-#include "../cpu/ports.h"
-#include "../libc/mem.h"
-#include "../libc/string.h"
+#include "drivers/screen.h"
+#include "cpu/ports.h"
+#include "libc/mem.h"
+#include "libc/string.h"
 #include <stdint.h>
 
 /* Declaration of private functions */
@@ -99,6 +99,9 @@ void kprint_hex_n(char *message, int n)
   int i = 0;
   while (i < n) {
     _itoa(((unsigned char*)message)[i], buf, 16);
+    if (buf[1] == 0) {
+      kprint_char('0');
+    }
     kprint(buf);
     i++;
   }

@@ -1,7 +1,6 @@
-#ifndef IDT_H
-#define IDT_H
+#pragma once
 
-#include <stdint.h>
+#include "cpu/x86.h"
 
 /* Segment selectors */
 #define KERNEL_CS 0x08
@@ -35,5 +34,3 @@ extern idt_register_t idt_reg;
 /* Functions implemented in idt.c */
 void set_idt_gate(int n, uint32_t handler);
 void set_idt();
-
-#endif
