@@ -11,5 +11,6 @@ void syscall_handler(registers_t *r)
 {
   kprintf("syscall_handler\n");
   if (r->eax == 4) {
+    kprint_k(r->ecx, r->edx);
   }
 }

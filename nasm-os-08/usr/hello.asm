@@ -4,9 +4,8 @@ len:	equ $-msg
 
 	SECTION .text
 
-        global main
+  global main
 main:
-  ret
 	mov	edx,len
 	mov	ecx,msg
 	mov	ebx,1
@@ -16,3 +15,4 @@ main:
 	mov	ebx,0
 	mov	eax,1
 	int	0x80
+  ret

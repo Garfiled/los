@@ -25,17 +25,20 @@ IFLAGS=-I${SRC_DIR}
 #	head -c102400 os-image.bin > os-image.bin.tmp
 #	mv os-image.bin.tmp os-image.bin
 
-os-image.bin: boot/bootsect.bin boot/entryother.bin kernel.bin padding.bin
+os-image.bin: boot/bootsect.bin boot/entryother.bin kernel.bin padding.bin hello.bin
 	cat $^ > os-image.bin.tmp
 	head -c65536 os-image.bin.tmp > os-image.bin
 	@/bin/echo -n -e \\x01\\x00\\x00\\x00 >> os-image.bin
 	@/bin/echo -n -e \\x68\\x65\\x6c\\x6c >> os-image.bin
 	@/bin/echo -n -e \\xe4\\x21\\x00\\x00 >> os-image.bin
 	@/bin/echo -n -e \\x10\\x00\\x00\\x00 >> os-image.bin
-	cat usr/out >> os-image.bin
+	cat hello.bin >> os-image.bin
 	cat padding.bin >> os-image.bin
 	head -c102400 os-image.bin > os-image.bin.tmp
 	mv os-image.bin.tmp os-image.bin
+
+hello.bin: usr/hello.o
+	${LD} -o hello.bin $^
 
 padding.bin:
 	dd if=/dev/zero of=./padding.bin bs=100k count=1
@@ -70,4 +73,4 @@ debug: os-image.bin kernel.elf
 
 clean:
 	rm -rf *.bin *.dis *.o os-image.bin *.elf
-	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o libc/*.o mm/*.o fs/*.o
+	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o libc/*.o mm/*.o fs/*.o usr/*.o

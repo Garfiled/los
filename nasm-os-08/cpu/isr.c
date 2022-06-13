@@ -76,6 +76,8 @@ void isr_install() {
     set_idt_gate(46, (uint32_t)irq14);
     set_idt_gate(47, (uint32_t)irq15);
 
+    set_idt_gate(128, (uint32_t)irq128);
+
     set_idt(); // Load with ASM
 }
 
@@ -118,34 +120,42 @@ char *exception_messages[] = {
     "Reserved"
 };
 
-void isr_handler(registers_t *r) {
-    //kprintf("isr received interrupt: %d %s\n", r->int_no, exception_messages[r->int_no]);
-    /* Handle the interrupt in a more modular way */
-    if (interrupt_handlers[r->int_no] != 0) {
+void isr_handler(registers_t *r) 
+{
+  kprintf("isr received interrupt: %d\n", r->int_no);
+  /* Handle the interrupt in a more modular way */
+  if (interrupt_handlers[r->int_no] != 0) {
+    isr_t handler = interrupt_handlers[r->int_no];
+    handler(r);
+  }
+}
+
+void register_interrupt_handler(uint8_t n, isr_t handler) 
+{
+  interrupt_handlers[n] = handler;
+}
+
+void irq_handler(registers_t *r) 
+{
+    // 不知道为啥这里是-128???
+  r->int_no = (uint8_t)r->int_no;
+  //if (r->int_no != 32) {
+  //  kprintf("irq received interrupt: %d %d\n", r->int_no, interrupt_handlers[r->int_no]==0);
+  //}
+  /* After every interrupt we need to send an EOI to the PICs
+   * or they will not send another interrupt again */
+  if (r->int_no >= 40) port_byte_out(0xA0, 0x20); /* slave */
+  port_byte_out(0x20, 0x20); /* master */
+
+  /* Handle the interrupt in a more modular way */
+  if (interrupt_handlers[r->int_no] != 0) {
       isr_t handler = interrupt_handlers[r->int_no];
       handler(r);
-    }
+  }
 }
 
-void register_interrupt_handler(uint8_t n, isr_t handler) {
-    interrupt_handlers[n] = handler;
-}
-
-void irq_handler(registers_t *r) {
-   // kprintf("irq received interrupt: %d %s\n", r->int_no, exception_messages[r->int_no]);
-    /* After every interrupt we need to send an EOI to the PICs
-     * or they will not send another interrupt again */
-    if (r->int_no >= 40) port_byte_out(0xA0, 0x20); /* slave */
-    port_byte_out(0x20, 0x20); /* master */
-
-    /* Handle the interrupt in a more modular way */
-    if (interrupt_handlers[r->int_no] != 0) {
-        isr_t handler = interrupt_handlers[r->int_no];
-        handler(r);
-    }
-}
-
-void irq_install() {
+void irq_install() 
+{
   /* Enable interruptions */
   asm volatile("sti");
   /* IRQ0: timer */
