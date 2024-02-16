@@ -1,5 +1,5 @@
 print:
-   pusha
+    pusha
 
 ; keep this in mind:
 ; while (string[i] != 0) { print string[i]; i++ }
@@ -21,6 +21,8 @@ start:
 done:
     popa
     ret
+
+
 
 print_nl:
     pusha

@@ -117,7 +117,7 @@ void read_hd(char s[])
 	int start_sector = atoi(s);
 	//kprint_int(start_sector);
 	//kprint("\n");
-	hd_rw(start_sector, HD_READ, 1, (void*)(0x9200));
+	hd_rw(false, start_sector, HD_READ, 1, (void*)(0x9200));
 }
 
 void write_hd(char s[])
@@ -129,7 +129,7 @@ void write_hd(char s[])
   }
 	//kprint(start_sector);
   kprint("write_hd\n");
-	hd_rw(start_sector, HD_WRITE, 1, buf);
+	hd_rw(false, start_sector, HD_WRITE, 1, buf);
 }
 
 void user_input(char *input) {

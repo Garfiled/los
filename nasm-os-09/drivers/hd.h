@@ -1,12 +1,13 @@
-#ifndef _HD_H
-#define _HD_H
+#pragma once
 
-#include <stdbool.h>
+extern int open_debug;
 
 void init_hd();
-void hd_rw(bool,uint32_t,uint8_t, uint16_t,void *);
+void hd_rw(uint32_t,uint8_t, uint16_t,void *);
 void check_hd_status();
 void reset_hd_controller();
+void read_hd(char* buf, uint32_t offset, uint32_t size);
+void read_hd_split(char* buf, uint32_t offset, uint32_t size);
 
 //  LBS request address
 #define HD_PORT_DATA            0x1f0
@@ -35,5 +36,3 @@ struct HD {
 	unsigned long nsectors;
 	unsigned short sector_bytes;
 };
-
-#endif

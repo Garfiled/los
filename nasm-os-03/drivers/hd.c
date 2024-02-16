@@ -6,16 +6,16 @@
 
 static void hd_interrupt(registers_t *regs) {
 	kprint("hd_interrupt:\n");
-    UNUSED(regs);
+  UNUSED(regs);
 }
 
 void init_hd(uint32_t freq) {
-    UNUSED(freq);
-    register_interrupt_handler(IRQ14, hd_interrupt);
+  UNUSED(freq);
+  register_interrupt_handler(IRQ14, hd_interrupt);
 
-    /* Send the command */
-   port_byte_out(port_byte_in(0x21)&0xfb, 0x21); /* Command port */
-   port_byte_out(port_byte_in(0xA1)&0xbf, 0xA1);
+   /* Send the command */
+  port_byte_out(port_byte_in(0x21)&0xfb, 0x21); /* Command port */
+  port_byte_out(port_byte_in(0xA1)&0xbf, 0xA1);
 }
 
 // CHS request address

@@ -55,9 +55,9 @@ dw 0xaa55
 	int 0x13
 	jc req_disk_err
 	
-    call load_kernel ; read the kernel from disk
-    call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
-    jmp $ ; Never executed
+  call load_kernel ; read the kernel from disk
+  call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
+  jmp $ ; Never executed
 
 req_disk_err:
 	mov dh,ah

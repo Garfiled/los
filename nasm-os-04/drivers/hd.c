@@ -68,7 +68,7 @@ void hd_wait_ready()
 	}
 }
 
-void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
+void hd_rw(bool is_master_device, uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
 {
   /*
 	uint8_t hd_status = port_byte_in(HD_PORT_STATUS);
@@ -89,7 +89,11 @@ void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
 	uint8_t lba3 = (uint8_t) (lba >> 24 & 0xf);
 
 	//IDE0主设备
-	lba3 |= 0xe0; // 1110 0000
+	if (is_master_device) {
+	  lba3 |= 0xe0; // 1110 0000
+	} else {
+	  lba3 |= 0xf0; // 1111 0000
+	}
 
 	//发送读写命令
 	port_byte_out(HD_PORT_SECT_COUNT,nsects);

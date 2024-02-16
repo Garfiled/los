@@ -10,4 +10,4 @@ clean:
 usb:
 	sudo dd if=./minimal of=/dev/sdb bs=512 count=300
 start:
-	qemu-system-i386 -fda los.img
+	qemu-system-i386 -fda minimal.bin
