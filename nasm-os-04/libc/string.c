@@ -1,5 +1,6 @@
 #include "string.h"
 #include <stdint.h>
+#include <stddef.h>
 
 /**
  * K&R implementation
@@ -23,15 +24,22 @@ void _itoa(int n, char str[], int radix) {
         }
     } while ((n /= radix) > 0);
 
-    if (sign < 0) str[i++] = '-'; 
+    if (sign < 0) str[i++] = '-';
     str[i] = '\0';
 
     reverse(str);
 }
 
-void hex_to_ascii(int n, char str[]) {
-    append(str, '0');
-    append(str, 'x');
+void hex_to_ascii(int n, char str[])
+{
+  str[0] = '\0';
+  append(str, '0');
+  append(str, 'x');
+  return hex_to_ascii_inner(n, str);
+}
+
+void hex_to_ascii_inner(int n, char str[])
+{
     char zeros = 0;
 
     int32_t tmp;
@@ -40,7 +48,7 @@ void hex_to_ascii(int n, char str[]) {
         tmp = (n >> i) & 0xF;
         if (tmp == 0 && zeros == 0) continue;
         zeros = 1;
-        if (tmp > 0xA) append(str, tmp - 0xA + 'a');
+        if (tmp >= 0xA) append(str, tmp - 0xA + 'a');
         else append(str, tmp + '0');
     }
 
@@ -77,7 +85,7 @@ void backspace(char s[]) {
     s[len-1] = '\0';
 }
 
-/* K&R 
+/* K&R
  * Returns <0 if s1<s2, 0 if s1==s2, >0 if s1>s2 */
 int strcmp(char s1[], char s2[]) {
     int i;
@@ -97,11 +105,11 @@ int strcmpN(char s1[], char s2[],int n) {
     return 0;
 }
 
-int atoi(char* str) 
-{ 
-    int res = 0; // Initialize result 
-    int sign = 1; // Initialize sign as positive 
-    int i = 0; // Initialize index of first digit 
+int atoi(char* str)
+{
+    int res = 0; // Initialize result
+    int sign = 1; // Initialize sign as positive
+    int i = 0; // Initialize index of first digit
     int dec = 10;
 
     if (str[0]=='0' && str[1]=='x')
@@ -109,14 +117,14 @@ int atoi(char* str)
         str += 2;
         dec = 16;
     }
-  
-    // If number is negative, then update sign 
-    if (str[0] == '-') { 
-        sign = -1; 
-        i++; // Also update index of first digit 
-    } 
-  
-    // Iterate through all digits and update the result 
+
+    // If number is negative, then update sign
+    if (str[0] == '-') {
+        sign = -1;
+        i++; // Also update index of first digit
+    }
+
+    // Iterate through all digits and update the result
     for (; str[i] != '\0'; ++i) {
         char vv;
         if (str[i]>='a')
@@ -125,10 +133,26 @@ int atoi(char* str)
             vv = str[i] - 'A'+10;
         else
             vv = str[i] - '0';
-        res = res * dec + vv; 
-  
+        res = res * dec + vv;
+
     }
 
-    // Return result with sign 
-    return sign * res; 
+    // Return result with sign
+    return sign * res;
+}
+
+uint32_t hex_to_int(char *hex)
+{
+    uint32_t val = 0;
+    while (*hex) {
+        // get current character then increment
+        uint8_t byte = *hex++;
+        // transform hex character to the 4bit equivalent number, using the ascii table indexes
+        if (byte >= '0' && byte <= '9') byte = byte - '0';
+        else if (byte >= 'a' && byte <='f') byte = byte - 'a' + 10;
+        else if (byte >= 'A' && byte <='F') byte = byte - 'A' + 10;
+        // shift 4 to make space for new digit, and add the 4 bits of the new digit
+        val = (val << 4) | (byte & 0xF);
+    }
+    return val;
 }

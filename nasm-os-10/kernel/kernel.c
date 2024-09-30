@@ -1,17 +1,19 @@
-#include "../cpu/isr.h"
-#include "../drivers/screen.h"
-#include "../drivers/hd.h"
-#include "../libc/string.h"
-#include "../libc/mem.h"
-#include "../libc/kprint.h"
-#include "../mm/alloc.h"
-#include "../cpu/x86.h"
+#include "cpu/isr.h"
+#include "drivers/screen.h"
+#include "drivers/hd.h"
+#include "libc/string.h"
+#include "libc/mem.h"
+#include "libc/kprint.h"
+#include "mm/alloc.h"
+#include "cpu/x86.h"
+#include "fs/vfs.h"
 
-#include "mp.h"
-#include "kernel.h"
-#include "page.h"
-#include "proc.h"
-#include "lapic.h"
+#include "kernel/mp.h"
+#include "kernel/kernel.h"
+#include "kernel/syscall.h"
+#include "kernel/page.h"
+#include "kernel/proc.h"
+#include "kernel/lapic.h"
 
 #define HD_NUM 2
 #define SYSTEM_PARAM_ADDR 0x9000
@@ -24,6 +26,8 @@ void kernel_main() {
   kprintf("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
   isr_install();
   irq_install();
+
+  init_syscall();
 
 	hd_setup((void*)(SYSTEM_PARAM_ADDR));
 
@@ -46,20 +50,10 @@ void kernel_main() {
   open_mm_page();
   register_interrupt_handler(14, page_fault_handler);
 
-  /*
-  kprintf("debug ebp=%x esp=%x cs=%x\n", ebp(), esp(), cs());
-  set_cr3((uint32_t)entry_pg_dir2);
-  kprintf("cr3:%x esp:%x\n",cr3(), esp());
-loop1:
-  goto loop1;
-  hang();
-  */
+  // 初始化文件系统
+  init_file_system();
 
-  //first proc
-  struct proc* first_p = alloc_proc();
-  if (first_p != NULL) {
-    kprintf("alloc first proc:%x %d\n", first_p, first_p->pid);
-  }
+  process_exec("hell", 0, NULL);
   scheduler();
 }
 
@@ -101,33 +95,31 @@ void print_mem(char s[])
   kprintf("\n");
 }
 
-void read_hd(char s[])
+void read_hd_cmd(char s[])
 {
-	int start_sector = atoi(s);
-	//kprint_int(start_sector);
-	//kprint("\n");
+  int start_sector = atoi(&s[2]);
   void* buf = alloc_mm(512);
-  if (buf != NULL) {
-	  hd_rw(start_sector, HD_READ, 1, buf);
-  } else {
-    kprint("alloc mm fail");
+  bool is_master_device = false;
+  if (s[0] == '0') {
+    is_master_device = true;
+  } else if (s[1] == '1') {
+    is_master_device = false;
   }
+  hd_rw(is_master_device, start_sector, HD_READ, 1, buf);
 }
 
 void write_hd(char s[])
 {
-	int start_sector = atoi(s);
-  char* buf = (char*)alloc_mm(512);
-  if (buf == NULL) {
-    kprint("alloc mm fail");
-    return;
-  }
+  int start_sector = atoi(&s[2]);
+  char *buf = (char*)alloc_mm(512);
   for (int i=0; i < 512; i++) {
     buf[i] = 'a';
   }
-	//kprint(start_sector);
-  //kprint("write_hd\n");
-	hd_rw(start_sector, HD_WRITE, 1, buf);
+  if (s[0] == '0') {
+    hd_rw(true, start_sector, HD_WRITE, 1, buf);
+  } else if (s[1] == '1') {
+    hd_rw(false, start_sector, HD_WRITE, 1, buf);
+  }
 }
 
 void user_input(char *input) {
@@ -136,13 +128,13 @@ void user_input(char *input) {
     asm volatile("hlt");
   } else if (strcmp(input, "lshd")==0) {
     print_hd();
-	} else if (strcmpN(input, "readhd",6)==0) {
-		read_hd(input+7);
-	} else if (strcmpN(input, "checkhd",7)==0) {
+	} else if (strcmpN(input, "readhd", 6)==0) {
+		read_hd_cmd(input+7);
+	} else if (strcmpN(input, "checkhd", 7)==0) {
 		check_hd_status();
-	} else if (strcmpN(input, "resethd",7)==0) {
+	} else if (strcmpN(input, "resethd", 7)==0) {
 		reset_hd_controller();
-	} else if (strcmpN(input, "lsmem",5)==0) {
+	} else if (strcmpN(input, "lsmem", 5)==0) {
 		print_mem(input+6);
 	} else if (strcmpN(input, "writehd", 7) == 0) {
     write_hd(input + 8);
@@ -161,14 +153,14 @@ void user_input(char *input) {
 // Start the non-boot (AP) processors.
 void startothers(void)
 {
-  kprintf("startothers begin:%d\n", ncpu);
+  kprintf("startothers\n");
   unsigned char *code;
   struct cpu *c;
   char *stack;
 
   code = (unsigned char*)0x6000;
 
-  for(c = cpus; c < cpus + ncpu; c++) {
+  for(c = cpus; c < cpus+ncpu; c++){
     kprintf("loop cpu: %x %x\n", c, mycpu());
     if(c == mycpu())  // We've started already.
       continue;
@@ -189,7 +181,6 @@ void startothers(void)
     while(c->started == 0) {};
     kprintf("finsih start cpu %d\n", c->apicid);
   }
-  kprintf("startothers end:%d\n", ncpu);
 }
 
 void mpenter()
@@ -226,32 +217,4 @@ void init_entry_page()
     entry_pg_table[i] = (i * 4096) | 3;
   }
   reserve_for_map[0] = (uint32_t)entry_pg_dir | 3;
-
-  init_entry_page2();
-}
-
-
-// boot page table
-__attribute__((__aligned__(4096)))
-uint32_t entry_pg_dir2[1024];
-
-__attribute__((__aligned__(4096)))
-uint32_t entry_pg_table2[1024];
-
-__attribute__((__aligned__(4096)))
-uint32_t reserve_for_map2[1024];
-
-void init_entry_page2()
-{
-  MEMSET(entry_pg_dir2, 0 , 4096);
-  MEMSET(entry_pg_table2, 0 , 4096);
-  MEMSET(reserve_for_map2, 0 , 4096);
-  entry_pg_dir2[0] = (uint32_t)entry_pg_table2 | 3;
-  entry_pg_dir2[MAP_PDE_IDX] = (uint32_t)entry_pg_dir2 | 3;
-  entry_pg_dir2[MAP_PG_DIR_PDE_IDX] = (uint32_t)reserve_for_map2 | 3;
-  // virtual address 0~4M -> phy address 0~4M
-  for (int i = 0; i < 1024; i++) {
-    entry_pg_table2[i] = (i * 4096) | 3;
-  }
-  reserve_for_map2[0] = (uint32_t)entry_pg_dir2 | 3;
 }

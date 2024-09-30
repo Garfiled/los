@@ -6,7 +6,7 @@
 #include "../drivers/hd.h"
 
 
-struct hd_request 
+struct hd_request
 {
 	uint32_t lba;
 	uint8_t  cmd;
@@ -70,18 +70,12 @@ void hd_wait_ready()
 
 void hd_rw(bool is_master_device, uint32_t lba, uint8_t cmd, uint16_t nsects,void *buf)
 {
-  /*
-	uint8_t hd_status = port_byte_in(HD_PORT_STATUS);
-  kprint("hd_status: ");
-  kprint_int(hd_status);
-  kprint("\n");
-  */
   hd_wait_ready();
 	curr_hd_request.lba = lba;
 	curr_hd_request.cmd = cmd;
 	curr_hd_request.nsects = nsects;
 	curr_hd_request.buf = buf;
-	
+
 	//计算扇区号
 	uint8_t lba0 = (uint8_t) (lba & 0xff);
 	uint8_t lba1 = (uint8_t) (lba >> 8 & 0xff);
@@ -104,12 +98,12 @@ void hd_rw(bool is_master_device, uint32_t lba, uint8_t cmd, uint16_t nsects,voi
 	port_byte_out(HD_PORT_COMMAND, cmd);
 
   hd_wait_ready();
- 
+
   if (curr_hd_request.cmd == HD_READ) {
 		port_read(HD_PORT_DATA,curr_hd_request.buf, curr_hd_request.nsects * 256);
   } else if (curr_hd_request.cmd == HD_WRITE) {
 		port_write(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
-  } 
+  }
 }
 
 void check_hd_status()

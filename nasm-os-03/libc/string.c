@@ -29,7 +29,7 @@ void hex_to_ascii(int n, char str[]) {
         tmp = (n >> i) & 0xF;
         if (tmp == 0 && zeros == 0) continue;
         zeros = 1;
-        if (tmp > 0xA) append(str, tmp - 0xA + 'a');
+        if (tmp >= 0xA) append(str, tmp - 0xA + 'a');
         else append(str, tmp + '0');
     }
 
@@ -66,7 +66,7 @@ void backspace(char s[]) {
     s[len-1] = '\0';
 }
 
-/* K&R 
+/* K&R
  * Returns <0 if s1<s2, 0 if s1==s2, >0 if s1>s2 */
 int strcmp(char s1[], char s2[]) {
     int i;

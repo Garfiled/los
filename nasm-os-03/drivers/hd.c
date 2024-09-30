@@ -60,7 +60,7 @@ static void hd_out(unsigned int drive,unsigned int nsect,unsigned int sect,
 }
 */
 
-void hd_rw(uint32_t lba,uint8_t  cmd, uint16_t nsects,void *buf)
+void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
 {
 	uint8_t status = 0;
 	uint16_t try_times = 0x10;

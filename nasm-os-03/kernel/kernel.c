@@ -6,6 +6,20 @@
 #include <stdint.h>
 #include "../drivers/hd.h"
 
+void print_int(int val)
+{
+  char str[20] = {0};
+  int_to_ascii(val, str);
+  kprint(str);
+}
+
+void print_hex(int val)
+{
+  char str[20] = {0};
+  hex_to_ascii(val, str);
+  kprint(str);
+}
+
 void kernel_main() {
   isr_install();
   irq_install();
@@ -21,51 +35,53 @@ void kernel_main() {
 	 int* sectors = (int*)0x900c;
 	 long* sectors_num = (long*)0x9010;
 	 short* sectors_bytes = (short*)0x9018;
-	 
-	 char cylinders_str[20];
-	 int_to_ascii(*cylinders,cylinders_str);
+
 	 kprint("cylinders: ");
-	 kprint(cylinders_str);
+   print_int(*cylinders);
 	 kprint(" ");
-	 char cylinders_str_hex[20];
-	 hex_to_ascii(*cylinders,cylinders_str_hex);
-	 kprint(cylinders_str_hex);
+   print_hex(*cylinders);
 	 kprint("\n");
 
-	 char heads_str[20];
-	 int_to_ascii(*heads,heads_str);
 	 kprint("heads: ");
-	 kprint(heads_str);
+   print_int(*heads);
 	 kprint(" ");
-	 char heads_str_hex[20];
-	 hex_to_ascii(*heads,heads_str_hex);
-	 kprint(heads_str_hex);
+   print_hex(*heads);
 	 kprint("\n");
 
-	 char sectors_str[20];
-	 int_to_ascii(*sectors,sectors_str);
 	 kprint("sectors: ");
-	 kprint(sectors_str);
+   print_int(*sectors);
 	 kprint(" ");
-	 char sectors_str_hex[20];
-	 hex_to_ascii(*sectors,sectors_str_hex);
-	 kprint(sectors_str_hex);
+   print_hex(*sectors);
 	 kprint("\n");
 
-	 char sectors_num_str[50];
-	 int_to_ascii(*sectors_num,sectors_num_str);
 	 kprint("sectors_num: ");
-	 kprint(sectors_num_str);
+   print_int(*sectors_num);
 	 kprint(" ");
-	 char sectors_bytes_str[20];
-	 int_to_ascii(*sectors_bytes,sectors_bytes_str);
-	 kprint(sectors_bytes_str);
+   print_hex(*sectors_num);
+	 kprint("\n");
+
+	 kprint("sectors_bytes: ");
+   print_int(*sectors_bytes);
+	 kprint(" ");
+   print_hex(*sectors_bytes);
 	 kprint("\n");
 
 	 kprint("HD_READ\n");
-	 hd_rw(37,HD_READ,1,(void*)(0x9200));
-	 
-	 kprint_k((char*)0x9200,10);
+	 hd_rw(0, HD_READ, 1, (void*)(0x9200));
+
+   // find magic number
+   unsigned char *magic = (unsigned char*)0x9200 + 510;
+	 kprint_k(magic, 2);
+   kprint("\n");
+   int val = *magic;
+   print_int(val);
+   kprint("\n");
+   print_hex(val);
+   kprint("\n");
+   val = *(magic + 1);
+   print_int(val);
+   kprint("\n");
+   print_hex(val);
 }
 
 void user_input(char *input) {
