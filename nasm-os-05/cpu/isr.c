@@ -1,18 +1,19 @@
-#include "isr.h"
-#include "idt.h"
-#include "../drivers/screen.h"
-#include "../drivers/keyboard.h"
-#include "../drivers/hd.h"
-#include "../libc/string.h"
-#include "timer.h"
-#include "ports.h"
-#include "../libc/kprint.h"
+#include "cpu/isr.h"
+#include "cpu/idt.h"
+#include "drivers/screen.h"
+#include "drivers/keyboard.h"
+#include "drivers/hd.h"
+#include "libc/string.h"
+#include "cpu/timer.h"
+#include "cpu/ports.h"
+#include "libc/kprint.h"
 
 isr_t interrupt_handlers[256];
 
 /* Can't do this with a loop because we need the address
  * of the function names */
-void isr_install() {
+void isr_install() 
+{
     set_idt_gate(0, (uint32_t)isr0);
     set_idt_gate(1, (uint32_t)isr1);
     set_idt_gate(2, (uint32_t)isr2);
@@ -118,7 +119,8 @@ char *exception_messages[] = {
     "Reserved"
 };
 
-void isr_handler(registers_t *r) {
+void isr_handler(registers_t *r) 
+{
     kprintf("received interrupt: %d %s\n", r->int_no, exception_messages[r->int_no]);
     /* Handle the interrupt in a more modular way */
     if (interrupt_handlers[r->int_no] != 0) {
@@ -127,11 +129,13 @@ void isr_handler(registers_t *r) {
     }
 }
 
-void register_interrupt_handler(uint8_t n, isr_t handler) {
+void register_interrupt_handler(uint8_t n, isr_t handler) 
+{
     interrupt_handlers[n] = handler;
 }
 
-void irq_handler(registers_t *r) {
+void irq_handler(registers_t *r) 
+{
     /* After every interrupt we need to send an EOI to the PICs
      * or they will not send another interrupt again */
     if (r->int_no >= 40) port_byte_out(0xA0, 0x20); /* slave */
@@ -144,13 +148,13 @@ void irq_handler(registers_t *r) {
     }
 }
 
-void irq_install() {
+void irq_install() 
+{
   /* Enable interruptions */
   asm volatile("sti");
   /* IRQ0: timer */
   init_timer(50);
   /* IRQ1: keyboard */
   init_keyboard();
-
-	init_hd();
+  init_hd();
 }

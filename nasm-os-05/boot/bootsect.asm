@@ -103,7 +103,7 @@ load_kernel:
     call print_nl
 
     mov bx, KERNEL_OFFSET ; Read from disk and store in 0x1000
-    mov dh, 40 ; Our future kernel will be larger, make this big
+    mov dh, 33 ; Our future kernel will be larger, make this big
     mov dl, [BOOT_DRIVE]
     mov cl,0x5
     call disk_load

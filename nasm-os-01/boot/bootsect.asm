@@ -1,6 +1,6 @@
 [org 0x7c00]
 KERNEL_OFFSET equ 0x1000 ; The same one we used when linking the kernel
-  xor ax,ax
+  xor ax,ax ;clear ax register
   mov es,ax
   mov ds,ax
   mov ss,ax

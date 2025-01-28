@@ -1,5 +1,5 @@
-#include "./string.h"
-#include "./kprint.h"
+#include "libc/string.h"
+#include "libc/kprint.h"
 #include <stdarg.h>
 
 void putchar(char c)

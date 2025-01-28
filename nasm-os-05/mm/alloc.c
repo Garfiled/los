@@ -1,4 +1,4 @@
-#include "./alloc.h"
+#include "mm/alloc.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -10,10 +10,9 @@
 
 void* alloc_mm(int size)
 {
-  //static uint32_t allocated = 16 * 1024 * 1024;
-  //uint32_t address = allocated;
-  //allocated += 4096;
-  uint32_t address = 16 * 1024 * 1024;
+  static uint32_t allocated = 16 * 1024 * 1024;
+  uint32_t address = allocated;
+  allocated += size;
   return (void*)address; 
 }
 

@@ -1,8 +1,8 @@
-#include "../cpu/isr.h"
-#include "../drivers/screen.h"
-#include "kernel.h"
-#include "../libc/string.h"
-#include "../libc/mem.h"
+#include "cpu/isr.h"
+#include "drivers/screen.h"
+#include "kernel/kernel.h"
+#include "libc/string.h"
+#include "libc/mem.h"
 #include <stdint.h>
 
 void kernel_main() {

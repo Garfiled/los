@@ -9,7 +9,7 @@ CC = gcc -m32 -fno-pic
 #GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
 GDB = gdb
 # -g: Use debugging symbols in gcc
-CFLAGS = -g
+CFLAGS = -g -I./
 LD = ld -m elf_i386 -s
 
 # First rule is run by default

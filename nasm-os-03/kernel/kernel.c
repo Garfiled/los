@@ -1,10 +1,10 @@
-#include "../cpu/isr.h"
-#include "../drivers/screen.h"
-#include "kernel.h"
-#include "../libc/string.h"
-#include "../libc/mem.h"
+#include "cpu/isr.h"
+#include "drivers/screen.h"
+#include "kernel/kernel.h"
+#include "libc/string.h"
+#include "libc/mem.h"
 #include <stdint.h>
-#include "../drivers/hd.h"
+#include "drivers/hd.h"
 
 void print_int(int val)
 {
@@ -29,45 +29,44 @@ void kernel_main() {
 
   kprint("Type something, it will go through the kernel\n"
       "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
+  int* cylinders = (int*)0x9004;
+  int* heads = (int*)0x9008;
+  int* sectors = (int*)0x900c;
+  long* sectors_num = (long*)0x9010;
+  short* sectors_bytes = (short*)0x9018;
 
-	 int* cylinders = (int*)0x9004;
-	 int* heads = (int*)0x9008;
-	 int* sectors = (int*)0x900c;
-	 long* sectors_num = (long*)0x9010;
-	 short* sectors_bytes = (short*)0x9018;
-
-	 kprint("cylinders: ");
+   kprint("cylinders: ");
    print_int(*cylinders);
-	 kprint(" ");
+   kprint(" ");
    print_hex(*cylinders);
-	 kprint("\n");
+   kprint("\n");
 
-	 kprint("heads: ");
+   kprint("heads: ");
    print_int(*heads);
-	 kprint(" ");
+   kprint(" ");
    print_hex(*heads);
-	 kprint("\n");
+   kprint("\n");
 
-	 kprint("sectors: ");
+   kprint("sectors: ");
    print_int(*sectors);
-	 kprint(" ");
+   kprint(" ");
    print_hex(*sectors);
-	 kprint("\n");
+   kprint("\n");
 
-	 kprint("sectors_num: ");
+   kprint("sectors_num: ");
    print_int(*sectors_num);
-	 kprint(" ");
+   kprint(" ");
    print_hex(*sectors_num);
-	 kprint("\n");
+   kprint("\n");
 
-	 kprint("sectors_bytes: ");
+   kprint("sectors_bytes: ");
    print_int(*sectors_bytes);
-	 kprint(" ");
+   kprint(" ");
    print_hex(*sectors_bytes);
-	 kprint("\n");
+   kprint("\n");
 
-	 kprint("HD_READ\n");
-	 hd_rw(0, HD_READ, 1, (void*)(0x9200));
+   kprint("HD_READ\n");
+   hd_rw(0, HD_READ, 1, (void*)(0x9200));
 
    // find magic number
    unsigned char *magic = (unsigned char*)0x9200 + 510;

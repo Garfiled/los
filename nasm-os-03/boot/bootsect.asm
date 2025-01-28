@@ -38,32 +38,32 @@ times 510 - ($-$$) db 0
 dw 0xaa55
 
 [bits 16]
-	mov ah,0x41
-	mov dl,[BOOT_DRIVE]
-	mov bx,0x55AA
-	int 0x13
-	jc req_disk_err
-	mov dx,bx
-	call print_hex
-	call print_nl
-
-	mov	ah,0x48
-	mov dl,[BOOT_DRIVE]
-	mov si,0x9000
-	mov word [si],0x1E
-	mov word [si+0x2],0x0
-	int 0x13
-	jc req_disk_err
+    mov ah,0x41
+    mov dl,[BOOT_DRIVE]
+    mov bx,0x55AA
+    int 0x13
+    jc req_disk_err
+    mov dx,bx
+    call print_hex
+    call print_nl
+    
+    mov	ah,0x48
+    mov dl,[BOOT_DRIVE]
+    mov si,0x9000
+    mov word [si],0x1E
+    mov word [si+0x2],0x0
+    int 0x13
+    jc req_disk_err
 	
-  call load_kernel ; read the kernel from disk
-  call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
-  jmp $ ; Never executed
+    call load_kernel ; read the kernel from disk
+    call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
+    jmp $ ; Never executed
 
 req_disk_err:
-	mov dh,ah
-	call print_hex
-	call print_nl
-	jmp $
+    mov dh,ah
+    call print_hex
+    call print_nl
+    jmp $
 
 [bits 16]
 load_kernel:
@@ -72,9 +72,9 @@ load_kernel:
     call print_nl
 
     mov bx, KERNEL_OFFSET ; Read from disk and store in 0x1000
-    mov dh, 31 ; Our future kernel will be larger, make this big
+    mov dh, 25 ; Our future kernel will be larger, make this big
     mov dl, [BOOT_DRIVE]
-	mov cl,0x5
+    mov cl,0x5
     call disk_load
     ret
 

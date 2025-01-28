@@ -1,8 +1,9 @@
-#ifndef _HD_H
-#define _HD_H
+#pragma once
+
+#include <stdbool.h>
 
 void init_hd();
-void hd_rw(uint32_t,uint8_t, uint16_t,void *);
+void hd_rw(bool is_master_device, uint32_t,uint8_t, uint16_t,void *);
 void check_hd_status();
 void reset_hd_controller();
 
@@ -33,5 +34,3 @@ struct HD {
 	unsigned long nsectors;
 	unsigned short sector_bytes;
 };
-
-#endif
