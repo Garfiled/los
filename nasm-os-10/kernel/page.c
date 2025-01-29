@@ -25,10 +25,10 @@ void* alloc_pte_for_proc()
   uint32_t* map_address = (uint32_t*)can_map_address;
 
   uint32_t* first_page_table = (uint32_t*)MAP_PAGE_TABLE_START;
-  kprintf("debug0: %x %x\n", first_page_table, *first_page_table);
+  //kprintf("debug0: %x %x\n", first_page_table, *first_page_table);
   // 2GB ~ 2GB+4M 映射所有二级页表，如何做到的呢？ 只需要pg_dir[512] = pg_dir_phy | 3
   uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (can_map_address / PAGE_ALIGN_SIZE));
-  kprintf("debug:%x %x\n", page_table, *page_table);
+  //kprintf("debug:%x %x\n", page_table, *page_table);
   // 找到当前未做映射的page_table， TODO 处理并发问题
   if (*page_table != 0) {
     // 已被占用
@@ -68,7 +68,7 @@ void* alloc_pte_for_proc()
   asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = 0;
 
-  kprintf("debug>%x %d %x\n", esp(), ebp(), pg_dir_phy_addr);
+  //kprintf("debug>%x %d %x\n", esp(), ebp(), pg_dir_phy_addr);
 
   return pg_dir_phy_addr;
 }

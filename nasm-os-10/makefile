@@ -9,7 +9,7 @@ CC = gcc -fno-pic
 GDB = gdb
 LD = ld -m elf_i386
 # -g: Use debugging symbols in gcc
-CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
+CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32 -I./
 IFLAGS=-I${SRC_DIR}
 
 os-image.bin: boot/bootsect.bin boot/entryother.bin kernel.bin
@@ -40,7 +40,7 @@ kernel.bin: boot/kernel_entry.o ${OBJ}
 
 # Used for debugging purposes
 kernel.elf: boot/kernel_entry.o ${OBJ}
-	${LD} -o $@ -Ttext 0x10000 $^ 
+	${LD} -o $@ -Ttext 0x10000 $^
 
 run: os-image.bin
 	qemu-system-i386 -hda os-image.bin -smp 2

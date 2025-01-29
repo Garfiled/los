@@ -94,9 +94,9 @@ void scheduler(void)
         continue;
 
       p->state = RUNNING;
-      kprintf("scheduler> pid:%d pgdir:%x stack:%x esp:%x\n", p->pid, p->pgdir, p->stack, esp());
+      // kprintf("scheduler> pid:%d pgdir:%x stack:%x esp:%x\n", p->pid, p->pgdir, p->stack, esp());
       set_cr3(p->pgdir);
-      kprintf("cr3:%x esp:%x\n",cr3(), esp());
+      // kprintf("cr3:%x esp:%x\n",cr3(), esp());
 
       swtch(p->stack, p->entry);
       // It should have changed its p->state before coming back.
@@ -108,15 +108,15 @@ void scheduler(void)
 
 int process_exec(char *path, int argc, char *argv[])
 {
-  kprintf("process_exec>\n");
+  // kprintf("process_exec>\n");
   alloc_proc(exec);
   return 0;
 }
 
 int exec(char *path, int argc, char *argv[])
 {
-  kprintf("exec>>>>>>>>>>>>>>>>\n");
-  path = "hell";
+  // kprintf("exec>>>>>>>>>>>>>>>>\n");
+  //path = "hell";
 
     // Read elf binary file.
   file_stat_t stat;
@@ -133,7 +133,7 @@ int exec(char *path, int argc, char *argv[])
     return -1;
   }
 
-  kprintf("load_elf>>>>>>>>>>>>>>>>\n");
+  // kprintf("load_elf>>>>>>>>>>>>>>>>\n");
   // Load elf binary.
   uint32_t exec_entry;
   if (load_elf(read_buffer, &exec_entry)) {

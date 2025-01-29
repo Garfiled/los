@@ -76,7 +76,6 @@ static int32_t naive_fs_read_data(char* filename, char* buf, uint32_t start, uin
   if (length > size) {
     length = size;
   }
-  kprintf("debug>>>>>> %x %x %x %x\n", naive_fs.partition.offset, offset, start, length);
   reset_hd_controller();
   read_hd_split(false, buf, naive_fs.partition.offset + offset + start, length);
   kprint_hex_n(buf, 20);

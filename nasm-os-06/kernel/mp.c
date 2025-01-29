@@ -2,19 +2,18 @@
 // Search memory for MP description structures.
 // http://developer.intel.com/design/pentium/datashts/24201606.pdf
 
-#include "mp.h"
-#include "proc.h"
-#include "lapic.h"
-#include "../libc/kprint.h"
-#include "../libc/string.h"
-#include "../cpu/ports.h"
+#include "kernel/mp.h"
+#include "kernel/proc.h"
+#include "kernel/lapic.h"
+#include "libc/kprint.h"
+#include "libc/string.h"
+#include "cpu/ports.h"
 
 struct cpu cpus[NCPU];
 int ncpu;
 unsigned char ioapicid;
 
-static unsigned char
-sum(unsigned char *addr, int len)
+static unsigned char sum(unsigned char *addr, int len)
 {
   int i, sum;
 
@@ -83,8 +82,7 @@ static struct mpconf* mpconfig(struct mp **pmp)
   return conf;
 }
 
-void
-mpinit(void)
+void mpinit(void)
 {
   unsigned char *p, *e;
   int ismp;

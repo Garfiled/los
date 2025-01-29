@@ -8,7 +8,7 @@ CC = gcc -fno-pic
 GDB = gdb
 LD = ld -m elf_i386
 # -g: Use debugging symbols in gcc
-CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
+CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32 -I./
 
 # First rule is run by default
 os-image.bin: boot/bootsect.bin boot/entryother.bin kernel.bin padding.bin

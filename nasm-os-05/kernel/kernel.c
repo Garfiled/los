@@ -19,7 +19,7 @@ extern uint32_t tick;
 char hd_num = 0;
 struct HD hd[HD_NUM];
 
-void kernel_main() 
+void kernel_main()
 {
   kprint("I am in kernel!\n");
   isr_install();
@@ -36,30 +36,27 @@ void kernel_main()
   kprint("los> ");
 }
 
-void* hd_setup(void* addr) 
+void* hd_setup(void* addr)
 {
   hd_num = *((char*)addr);
   kprintf("hd_setup hd_num:%d\n", hd_num);
   addr++;
-  
-  for (int i=0;i<hd_num;i++)
-  {
-  	if (i<HD_NUM)
-  	{
-  		hd[i].cyl = *((unsigned int*)(addr+4));			
-  		hd[i].head = *((unsigned int*)(addr+8));			
-  		hd[i].sector = *((unsigned int*)(addr+12));			
-  		hd[i].nsectors = *((unsigned long*)(addr+16));			
-  		hd[i].sector_bytes = *((unsigned int*)(addr+24));			
-  	}
-  	addr += 30;
+  for (int i=0;i<hd_num;i++) {
+    if (i<HD_NUM) {
+      hd[i].cyl = *((unsigned int*)(addr+4));
+      hd[i].head = *((unsigned int*)(addr+8));
+      hd[i].sector = *((unsigned int*)(addr+12));
+      hd[i].nsectors = *((unsigned long*)(addr+16));
+      hd[i].sector_bytes = *((unsigned int*)(addr+24));
+    }
+    addr += 30;
   }
   if (hd_num>HD_NUM)
     hd_num = HD_NUM;
   return addr;
 }
 
-void print_hd() 
+void print_hd()
 {
   kprint("hd cyl head sector sector_bytes nsectors\n");
   for (int i = 0; i < hd_num; i++) {
@@ -73,7 +70,7 @@ void print_mem(uint32_t addr)
 }
 
 void read_hd(bool is_master_device, int start_sector)
-{	
+{
   void* buf = alloc_mm(512);
   if (buf != NULL) {
     hd_rw(is_master_device, start_sector, HD_READ, 1, buf);
@@ -83,7 +80,7 @@ void read_hd(bool is_master_device, int start_sector)
 }
 
 void write_hd(bool is_master_device, int start_sector, char *buf)
-{	
+{
   kprintf("writehd:%d %d %s\n", is_master_device, start_sector, buf);
   void* mem_buf = alloc_mm(512);
   if (mem_buf != NULL) {
@@ -157,7 +154,7 @@ void user_input(char *input) {
     void *alloc_buf = alloc_mm(1);
     kprintf("-- alloc_buf=%x\n", alloc_buf);
   } else if (strcmp(cmd[0], "writemem") == 0) {
-    memcpy((char*)(atoi(cmd[1])), cmd[2], strlen(cmd[2])); 
+    memcpy((char*)(atoi(cmd[1])), cmd[2], strlen(cmd[2]));
   }
   kprint("los> ");
 }

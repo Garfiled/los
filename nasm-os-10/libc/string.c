@@ -1,5 +1,6 @@
 #include "libc/string.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 /**
  * K&R implementation
@@ -23,7 +24,7 @@ void _itoa(int n, char *str, int radix) {
         }
     } while ((n /= radix) > 0);
 
-    if (sign < 0) str[i++] = '-'; 
+    if (sign < 0) str[i++] = '-';
     str[i] = '\0';
 
     reverse(str);
@@ -77,7 +78,7 @@ void backspace(char *s) {
   s[len-1] = '\0';
 }
 
-/* K&R 
+/* K&R
  * Returns <0 if s1<s2, 0 if s1==s2, >0 if s1>s2 */
 int strcmp(char *s1, char *s2) {
   int i;
@@ -97,25 +98,25 @@ int strcmpN(char *s1, char *s2,int n) {
   return 0;
 }
 
-int atoi(char* str) 
-{ 
-  int res = 0; // Initialize result 
-  int sign = 1; // Initialize sign as positive 
-  int i = 0; // Initialize index of first digit 
+int atoi(char* str)
+{
+  int res = 0; // Initialize result
+  int sign = 1; // Initialize sign as positive
+  int i = 0; // Initialize index of first digit
   int dec = 10;
 
   if (str[0]=='0' && str[1]=='x') {
     str += 2;
     dec = 16;
   }
- 
-  // If number is negative, then update sign 
-  if (str[0] == '-') { 
-      sign = -1; 
-      i++; // Also update index of first digit 
-  } 
- 
-  // Iterate through all digits and update the result 
+
+  // If number is negative, then update sign
+  if (str[0] == '-') {
+      sign = -1;
+      i++; // Also update index of first digit
+  }
+
+  // Iterate through all digits and update the result
   for (; str[i] != '\0'; ++i) {
     char vv;
     if (str[i]>='a')
@@ -124,10 +125,10 @@ int atoi(char* str)
       vv = str[i] - 'A'+10;
     else
       vv = str[i] - '0';
-    res = res * dec + vv; 
+    res = res * dec + vv;
   }
-  // Return result with sign 
-  return sign * res; 
+  // Return result with sign
+  return sign * res;
 }
 
 void memmove(char *s1, char* s2, int n)
@@ -142,4 +143,27 @@ void memset(char *s, char c, int n)
   for (int i = 0; i < n; i++) {
     s[i] = c;
   }
+}
+
+void* memcpy(void *dst, const void *src, size_t count)
+{
+    // 容错处理
+    if(dst == NULL || src == NULL){
+        return NULL;
+    }
+    unsigned char *pdst = (unsigned char *)dst;
+    const unsigned char *psrc = (const unsigned char *)src;
+    //判断内存是否重叠
+    bool flag1 = (pdst >= psrc && pdst < psrc + count);
+    bool flag2 = (psrc >= pdst && psrc < pdst + count);
+    if(flag1 || flag2){
+        return NULL;
+    }
+    // 拷贝
+    while(count--){
+        *pdst = *psrc;
+        pdst++;
+        psrc++;
+    }
+    return dst;
 }
