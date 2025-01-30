@@ -28,9 +28,9 @@ void kernel_main()
   isr_install();
   irq_install();
 
-  init_syscall();
-
   hd_setup((void*)(SYSTEM_PARAM_ADDR));
+
+  init_syscall();
 
   mpinit();
 
@@ -38,6 +38,7 @@ void kernel_main()
 
   // phy memory mgr
   install_alloc();
+  hang();
 
   // 初始化processor启动过渡页表
   init_entry_page();
@@ -56,8 +57,8 @@ void kernel_main()
   kprintf("create hello process>>>\n");
   process_exec("hell", 0, NULL);
 
-  kprintf("start schedule>>>\n");
   // hang();
+  kprintf("start schedule process>>>\n");
   scheduler();
 }
 

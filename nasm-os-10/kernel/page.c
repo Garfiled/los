@@ -123,19 +123,19 @@ uint32_t *map_process = NULL;
 // 物理内存
 void install_alloc()
 {
-	//位图所在的固定内存区域为 [0x100000, 0x200000)
-	mmap = (uint8_t *) MMAP;
-	for (uint32_t i = 0; i < MAP_SIZE_LOGIC; i++) {
-		//16M以下均为已使用
-		if (i < MMAP_USED_SIZE) {
-			//设定内核所占用的1MB内存为已使用
-			mmap[i] = (MM_USED | MM_NO_SWAP);
-		}
-		//剩下的内存为未使用
-		else {
-			mmap[i] = (MM_FREE | MM_CAN_SWAP);
-		}
-	}
+  //位图所在的固定内存区域为 [0x100000, 0x200000)
+  // 每个字节映射4k的话，一共可以映射4GB的内存空间
+  mmap = (uint8_t *) MMAP;
+  for (uint32_t i = 0; i < MAP_SIZE_LOGIC; i++) {
+    //16M以下均为已使用
+    if (i < MMAP_USED_SIZE) {
+      //设定内核所占用的1MB内存为已使用
+      mmap[i] = (MM_USED | MM_NO_SWAP);
+    } else {
+      //剩下的内存为未使用
+      mmap[i] = (MM_FREE | MM_CAN_SWAP);
+    }
+  }
 }
 
 //初始化内存页的使用者
@@ -147,7 +147,7 @@ void install_used_map()
 	 * map_process所占内存空间为 [0x200000, 0x600000)
 	 */
 	for (uint32_t i = 0; i < MAP_SIZE_LOGIC; i++) {
-		map_process[i] = 0;
+	  map_process[i] = 0;
 	}
 }
 
@@ -161,46 +161,43 @@ void* alloc_page(uint32_t process_id, uint32_t count, uint32_t can_swap, uint32_
 {
   UNUSED(is_dynamic);
   UNUSED(can_swap);
-	//查找内存申请地址
-	void *ret = NULL;
-	//找到空闲内存页计数
-	uint32_t num = 0;
-	//开始编号
-	uint32_t start_with = 0;
-	//从未被分配内存页的地方开始查找
-	for (uint32_t i = MMAP_USED_SIZE; i < MAP_SIZE; i++)
-	{
-		//如果找到空闲页
-		if ((mmap[i] & 0x1) == MM_FREE)
-		{
-			//设置可分配内存起始编号
-			if (start_with == 0) {
-				ret = (void*) (i * PAGE_ALIGN_SIZE);
-				start_with = i;
-			}
-			num++;
-		}
-		//如果没有找到空闲页
-		else {
-			//清空变量
-			ret = NULL;
-			num = 0;
-			start_with = 0;
-		}
-		//找到了可分配内存页，并且找到了预期想要分配的数量
-		if (start_with != 0 && num >= count) {
-			break;
-		}
-	}
-	//设置map的各个内存页的状态为已使用
-	for (uint32_t i = 0; i < count; i++) {
-		mmap[start_with + i] = MM_USED | MM_CAN_SWAP; //(MM_USED | ((uint32_t) can_swap << 1) | ((uint32_t) is_dynamic << 2));
-		map_process[start_with + i] = process_id;
-	}
+  //查找内存申请地址
+  void *ret = NULL;
+  //找到空闲内存页计数
+  uint32_t num = 0;
+  //开始编号
+  uint32_t start_with = 0;
+  //从未被分配内存页的地方开始查找
+  for (uint32_t i = MMAP_USED_SIZE; i < MAP_SIZE; i++) {
+    //如果找到空闲页
+    if ((mmap[i] & 0x1) == MM_FREE) {
+      //设置可分配内存起始编号
+      if (start_with == 0) {
+        ret = (void*) (i * PAGE_ALIGN_SIZE);
+        start_with = i;
+       }
+       num++;
+    }
+    //如果没有找到空闲页
+    else {
+      //清空变量
+      ret = NULL;
+      num = 0;
+      start_with = 0;
+    }
+    //找到了可分配内存页，并且找到了预期想要分配的数量
+    if (start_with != 0 && num >= count) {
+      break;
+    }
+  }
+  //设置map的各个内存页的状态为已使用
+  for (uint32_t i = 0; i < count; i++) {
+    mmap[start_with + i] = MM_USED | MM_CAN_SWAP; //(MM_USED | ((uint32_t) can_swap << 1) | ((uint32_t) is_dynamic << 2));
+    map_process[start_with + i] = process_id;
+  }
   //kprintf("alloc_page: addr=%x count=%d\n", ret, count);
-
-	//返回查找到内存地址
-	return ret;
+  //返回查找到内存地址
+  return ret;
 }
 
 /*
@@ -211,29 +208,28 @@ void* alloc_page(uint32_t process_id, uint32_t count, uint32_t can_swap, uint32_
  */
 void free_page(void *addr, uint32_t count)
 {
-	//释放内存页
-	for (uint32_t i = 0; i < count; i++)
-	{
-		//更新map中这些页的状态
-		mmap[(uint32_t) (addr + (i * PAGE_ALIGN_SIZE)) / PAGE_ALIGN_SIZE] = (MM_FREE | MM_CAN_SWAP | MM_NO_DYNAMIC);
-		map_process[i] = 0;
-	}
+  //释放内存页
+  for (uint32_t i = 0; i < count; i++) {
+    //更新map中这些页的状态
+    mmap[(uint32_t) (addr + (i * PAGE_ALIGN_SIZE)) / PAGE_ALIGN_SIZE] = (MM_FREE | MM_CAN_SWAP | MM_NO_DYNAMIC);
+    map_process[i] = 0;
+  }
 }
 
 void free_page_by_pid(uint32_t pid)
 {
-	for (uint32_t i = 0; i < MAP_SIZE_LOGIC; i++) {
-		if (map_process[i] == pid) {
-			mmap[i] = (MM_FREE | MM_CAN_SWAP);
-			map_process[i] = 0;
-		}
-	}
+  for (uint32_t i = 0; i < MAP_SIZE_LOGIC; i++) {
+    if (map_process[i] == pid) {
+      mmap[i] = (MM_FREE | MM_CAN_SWAP);
+      map_process[i] = 0;
+    }
+  }
 }
 
 uint32_t *find_page_table(uint32_t address)
 {
   // 虚拟地址空间2G + 4M映射了页目录
-	uint32_t *page_dir_addr = MAP_PAGE_TABLE_PG_DIR;
+  uint32_t *page_dir_addr = MAP_PAGE_TABLE_PG_DIR;
 
   //asm("invlpg (%0)" : :  "r"(page_dir_addr));
   // 高10位存放的是dir offset
@@ -271,6 +267,7 @@ uint32_t *find_page_table(uint32_t address)
   return page_table;
 }
 
+// 映射物理内存
 void map_pte(uint32_t addr)
 {
   // to find page table
@@ -288,6 +285,7 @@ void map_pte(uint32_t addr)
   //kprintf("--map_pte succ %x %x\n", addr, phy_page);
 }
 
+// 处理缺页中断
 void page_fault_handler(registers_t *r)
 {
   uint32_t faulting_address;

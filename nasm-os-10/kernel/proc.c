@@ -52,7 +52,7 @@ found:
   // pg dir
   p->pgdir = (uint32_t)alloc_pte_for_proc();
   if (p->pgdir == 0) {
-    kprintf("alloc_pte_for_proc fail\n");
+    kprintf("failed to alloc_pte_for_proc\n");
     return NULL;
   }
   // stack 1G+3K
@@ -60,7 +60,6 @@ found:
   p->entry = entry_func;
   //MEMSET(p->context, 0, sizeof *p->context);
   p->killed = 0;
-
   p->state = RUNNABLE;
   return p;
 }

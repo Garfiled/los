@@ -83,8 +83,7 @@ static struct mpconf* mpconfig(struct mp **pmp)
   return conf;
 }
 
-void
-mpinit(void)
+void mpinit(void)
 {
   unsigned char *p, *e;
   int ismp;

@@ -9,10 +9,10 @@
 
 struct hd_request
 {
-	uint32_t lba;
-	uint8_t  cmd;
-	uint16_t nsects;
-	void *buf;
+  uint32_t lba;
+  uint8_t  cmd;
+  uint16_t nsects;
+  void *buf;
 };
 
 int open_debug = 0;
@@ -21,17 +21,18 @@ static struct hd_request curr_hd_request;
 
 static void hd_interrupt(registers_t *regs) {
   UNUSED(regs);
-	//uint8_t status = port_byte_in(HD_PORT_STATUS);
-	//kprintf("--hd_interrupt status:%d\n", status);
+  //uint8_t status = port_byte_in(HD_PORT_STATUS);
+  //kprintf("--hd_interrupt status:%d\n", status);
 }
 
-void init_hd(uint32_t freq) {
-   UNUSED(freq);
-   register_interrupt_handler(IRQ14, hd_interrupt);
+void init_hd(uint32_t freq)
+{
+  UNUSED(freq);
+  register_interrupt_handler(IRQ14, hd_interrupt);
 
-    /* Send the command */
-   port_byte_out(port_byte_in(0x21)&0xfb, 0x21); /* Command port */
-   port_byte_out(port_byte_in(0xA1)&0xbf, 0xA1);
+   /* Send the command */
+  port_byte_out(port_byte_in(0x21)&0xfb, 0x21); /* Command port */
+  port_byte_out(port_byte_in(0xA1)&0xbf, 0xA1);
 }
 
 // CHS request address
@@ -48,10 +49,10 @@ void init_hd(uint32_t freq) {
 void hd_wait_ready()
 {
   // 等待设备空闲
-	while (port_byte_in(HD_PORT_STATUS) < 0 ) {
-	}
-	while ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40) {
-	}
+  while (port_byte_in(HD_PORT_STATUS) < 0 ) {
+  }
+  while ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40) {
+  }
 }
 
 void hd_rw(bool is_master_device, uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
@@ -137,17 +138,17 @@ void read_hd_split(bool is_master_device, char* buf, uint32_t offset, uint32_t s
 
 void check_hd_status()
 {
-	uint8_t status = port_byte_in(HD_PORT_STATUS);
-	kprint("hd_status: ");
-	kprint_int(status);
-	kprint("\n");
+  uint8_t status = port_byte_in(HD_PORT_STATUS);
+  kprint("hd_status: ");
+  kprint_int(status);
+  kprint("\n");
 }
 
 void reset_hd_controller()
 {
-	//kprint("reset:\n");
-	port_byte_out(HD_CMD,4);
-	for (int i=1000;i>0;i--);
-	port_byte_out(HD_CMD,8);
-	for (int i=1000;i>0;i--);
+  //kprint("reset:\n");
+  port_byte_out(HD_CMD,4);
+  for (int i=1000;i>0;i--);
+  port_byte_out(HD_CMD,8);
+  for (int i=1000;i>0;i--);
 }

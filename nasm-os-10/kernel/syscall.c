@@ -4,7 +4,7 @@
 
 void init_syscall()
 {
-  register_interrupt_handler(0x80, syscall_handler);  
+  register_interrupt_handler(0x80, syscall_handler);
 }
 
 void syscall_handler(registers_t *r)
