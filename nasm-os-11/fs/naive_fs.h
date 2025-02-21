@@ -4,7 +4,7 @@
 
 struct naive_file_meta
 {
-  char filename[4];
+  char filename[32];
   uint32_t size;
   uint32_t offset;
 };

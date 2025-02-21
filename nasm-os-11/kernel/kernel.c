@@ -43,7 +43,7 @@ void kernel_main()
   init_entry_page();
 
   // start other processor
-  startothers();
+  //startothers();
 
   set_cr3((uint32_t)entry_pg_dir);
 
@@ -54,9 +54,8 @@ void kernel_main()
   init_file_system();
 
   kprintf("create hello process>>>\n");
-  process_exec("hell", 0, NULL);
+  process_exec("hello", 0, NULL);
 
-  // hang();
   kprintf("start schedule process>>>\n");
   scheduler();
 }

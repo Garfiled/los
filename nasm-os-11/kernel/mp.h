@@ -34,16 +34,16 @@ struct mpconf {
     uint8_t reserved;             // 保留
 } __attribute__((packed));        // 总大小应为 44 字节
 
-struct mpproc {         // processor table entry
-  unsigned char type;                   // entry type (0)
-  unsigned char apicid;                 // local APIC id
-  unsigned char version;                // local APIC verison
-  unsigned char flags;                  // CPU flags
-    #define MPBOOT 0x02           // This proc is the bootstrap processor.
-  unsigned char signature[4];           // CPU signature
-  unsigned int feature;                 // feature flags from CPUID instruction
-  unsigned char reserved[8];
-};
+struct mpproc {
+    unsigned char type;        // 0x00 表示MPPROC
+    unsigned char length;      // 应为20字节
+    unsigned char apicid;      // APIC ID
+    unsigned char apicver;     // APIC版本
+    unsigned char cpuflags;    // CPU标志（如启用状态）
+    unsigned char reserved[3]; // 保留字段
+    uint32_t featureflags;  // 特性标志
+    uint32_t reserved2[2];  // 保留
+} __attribute__((packed)); // 确保无填充
 
 struct mpioapic {       // I/O APIC table entry
   unsigned char type;                   // entry type (2)

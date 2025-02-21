@@ -119,10 +119,11 @@ void mpinit(void)
   }
 
   kprintf("MP configuration table contents: %x %d\n",conf, conf->entry_count);
-  int print_length = total_length < 128 ? total_length : 128;
+  int print_length = total_length < 256 ? total_length : 256;
   for (int i = 0; i < print_length; i++) {
-    kprintf("%d ", ((char*)conf->signature)[i]);
+    kprintf("%d ", ((unsigned char*)conf)[i]);
     if ((i + 1) % 16 == 0) kprintf("\n");
+	if (i == 44-1) kprintf("\n\n");
   }
   kprintf("\n");
   // 解析 MP 配置表
@@ -131,7 +132,7 @@ void mpinit(void)
   struct mpproc *proc;
   int ismp = 1;
   for(p=(unsigned char*)(conf+1), e=(unsigned char*)conf+conf->length; p<e; ){
-	kprintf("debug>:%x %d\n", p, p[0]);
+	kprintf("debug>:%x %d %d\n", p, p[0], p[1]);
     switch(*p){
     case MPPROC:
       proc = (struct mpproc*)p;
@@ -139,8 +140,6 @@ void mpinit(void)
         cpus[ncpu].apicid = proc->apicid;  // apicid may differ from ncpu
         ncpu++;
       }
-	  kprintf("debug>>:%d %d %d %d\n", proc->signature[0],
-			  proc->signature[1], proc->signature[2], proc->signature[3]);
       p += 20;
       continue;
     case MPIOAPIC:
@@ -155,5 +154,5 @@ void mpinit(void)
     }
   }
   kprintf("Found %d CPUs\n", ncpu);
-  hang();
+  // hang();
 }

@@ -9,7 +9,7 @@ void init_syscall()
 
 void syscall_handler(registers_t *r)
 {
-  kprintf("syscall_handler\n");
+  kprintf("syscall_handler: %d %d %d %d\n", r->eax, r->ebx, r->ecx, r->edx);
   if (r->eax == 4) {
     kprint_k(r->ecx, r->edx);
   }

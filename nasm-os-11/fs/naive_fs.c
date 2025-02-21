@@ -16,15 +16,25 @@ fs_t* get_naive_fs()
   return &naive_fs;
 }
 
+static naive_file_meta_t* find_file_meta(const char* filename)
+{
+  for (uint32_t i = 0; i < file_num; i++) {
+      naive_file_meta_t* meta = &file_metas[i];
+      if (strcmp(meta->filename, filename) == 0) {
+          return meta;
+      }
+  }
+  return NULL;
+}
+
+
 static int32_t naive_fs_stat_file(char* filename, file_stat_t* stat)
 {
   kprintf("naive_fs_stat_file: %x %s\n", file_num, filename);
-  for (uint32_t i = 0; i < file_num; i++) {
-    naive_file_meta_t* meta = file_metas + i;
-    if (strcmpN(meta->filename, filename, sizeof(meta->filename)) == 0) {
-      stat->size = meta->size;
-      return 0;
-    }
+  naive_file_meta_t* file_meta = find_file_meta(filename);
+  if (file_meta != NULL) {
+	stat->size = file_meta->size;
+	return 0;
   }
   return -1;
 }
@@ -58,15 +68,7 @@ static int32_t naive_fs_list_dir(char* dir)
 
 static int32_t naive_fs_read_data(char* filename, char* buf, uint32_t start, uint32_t length)
 {
-  kprintf("naive_fs_read_data>>>>>>>>>> %s %d\n", filename, sizeof(file_metas[0].filename));
-  naive_file_meta_t* file_meta = NULL;
-  for (uint32_t i = 0; i < file_num; i++) {
-    naive_file_meta_t* meta = file_metas + i;
-    if (strcmpN(meta->filename, filename, sizeof(meta->filename)) == 0) {
-      file_meta = meta;
-      break;
-    }
-  }
+  naive_file_meta_t* file_meta = find_file_meta(filename);
   if (file_meta == NULL) {
     return -1;
   }
@@ -76,24 +78,24 @@ static int32_t naive_fs_read_data(char* filename, char* buf, uint32_t start, uin
   if (length > size) {
     length = size;
   }
-  reset_hd_controller();
-  read_hd_split(false, buf, naive_fs.partition.offset + offset + start, length);
-  kprint_hex_n(buf, 20);
-  kprintf("\n");
-  kprint_hex_n(buf+4096, 20);
-  kprintf("\n");
-  kprint_hex_n(buf+8192, 20);
-  kprintf("\n");
+  uint32_t phy_offset = naive_fs.partition.offset + offset + start;
+  read_hd_split(false, buf, phy_offset, length);
   return length;
 }
 
 static int32_t naive_fs_write_data(char* filename, char* buf, uint32_t offset, uint32_t length)
 {
-  UNUSED(filename);
-  UNUSED(buf);
-  UNUSED(offset);
-  UNUSED(length);
-  return 0;
+  naive_file_meta_t* file_meta = find_file_meta(filename);
+  if (!file_meta) {
+    return -1; // 文件不存在
+  }
+
+  if (offset + length > file_meta->size) {
+      return -1; // 超出文件范围
+  }
+
+  // write_hd_split(false, buf, naive_fs.partition.offset + file_meta->offset + offset, length);
+  return length;
 }
 
 void init_naive_fs()
@@ -116,7 +118,7 @@ void init_naive_fs()
   uint32_t meta_size = file_num * sizeof(naive_file_meta_t);
   // 如果通过alloc_mm申请的话，其他进程看不到
   //file_metas = (naive_file_meta_t*)alloc_mm(meta_size);
-  read_hd(false, (char*)file_metas, 4 + naive_fs.partition.offset, meta_size);
+  read_hd(false, (char*)file_metas, sizeof(uint32_t) + naive_fs.partition.offset, meta_size);
   for (uint32_t i = 0; i < file_num; i++) {
     naive_file_meta_t* meta = file_metas + i;
     kprintf("file name=%s offset=%d size=%d\n", meta->filename, meta->offset, meta->size);

@@ -23,15 +23,17 @@ hello.bin: usr/hello.o
 	${LD} -o hello.bin $^
 
 test: hello.bin
+	# 文件数量
 	@/bin/echo -n -e \\x01\\x00\\x00\\x00 > test
-	@/bin/echo -n -e \\x68\\x65\\x6c\\x6c >> test
+	# 2. 文件元数据条目（共40字节）
+	# 文件名（32字节，"hello" + 27个零填充）
+	@/bin/echo -n -e "hello" | dd bs=32 conv=sync,notrunc >> test 2>/dev/null
 	@/bin/echo -n -e \\xe4\\x21\\x00\\x00 >> test
-	@/bin/echo -n -e \\x10\\x00\\x00\\x00 >> test
+	@/bin/echo -n -e \\xa4\\x0f\\x00\\x00 >> test
+	dd if=/dev/zero bs=3960 count=1 >> test
 	cat hello.bin >> test
-	dd if=/dev/zero of=./test.tmp bs=100k count=1
-	cat test.tmp >> test
-	head -c102400 test > test.tmp
-	mv test.tmp test
+	# 4. 填充至100KB
+	truncate -s 102400 test
 
 # '--oformat binary' deletes all symbols as a collateral, so we don't need
 # to 'strip' them manually on this case
@@ -62,5 +64,5 @@ debug: os-image.bin kernel.elf
 	nasm $< -f bin -o $@
 
 clean:
-	rm -rf *.bin *.dis *.o os-image.bin *.elf
+	rm -rf *.bin *.dis *.o os-image.bin *.elf test
 	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o libc/*.o mm/*.o fs/*.o usr/*.o

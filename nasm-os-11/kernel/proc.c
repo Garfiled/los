@@ -1,11 +1,12 @@
+#include "cpu/x86.h"
 #include "libc/kprint.h"
-#include "libc/string.h"
 #include "fs/file.h"
 #include "mm/alloc.h"
 #include "kernel/proc.h"
 #include "kernel/page.h"
 #include "kernel/kernel.h"
 #include "kernel/elf.h"
+#include "fs/vfs.h"
 
 struct {
   struct proc proc[NPROC];
@@ -108,6 +109,9 @@ void scheduler(void)
 int process_exec(char *path, int argc, char *argv[])
 {
   // kprintf("process_exec>\n");
+  UNUSED(path);
+  UNUSED(argc);
+  UNUSED(argv);
   alloc_proc(exec);
   return 0;
 }
@@ -115,7 +119,7 @@ int process_exec(char *path, int argc, char *argv[])
 int exec(char *path, int argc, char *argv[])
 {
   // kprintf("exec>>>>>>>>>>>>>>>>\n");
-  //path = "hell";
+  path = "hello";
 
     // Read elf binary file.
   file_stat_t stat;
@@ -137,12 +141,13 @@ int exec(char *path, int argc, char *argv[])
   uint32_t exec_entry;
   if (load_elf(read_buffer, &exec_entry)) {
     kprintf("load elf fail\n");
+    free_mm(read_buffer);
     return -1;
   }
 
-  kprintf("call_elf>>>>>>>>>>>>>>>>%x\n", exec_entry);
-  kprint_hex_n((char*)exec_entry, 20);
+  kprintf("call_elf on entry:%x\n", exec_entry);
   asm volatile("movl %%eax, %%edx" :: "a"(exec_entry));
   asm volatile("call %edx");
+  free_mm(read_buffer);
   return 0;
 }
