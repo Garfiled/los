@@ -2,7 +2,6 @@
 #include "drivers/screen.h"
 #include "drivers/hd.h"
 #include "libc/string.h"
-#include "libc/mem.h"
 #include "libc/kprint.h"
 #include "mm/alloc.h"
 #include "cpu/x86.h"
@@ -14,6 +13,7 @@
 #include "kernel/page.h"
 #include "kernel/proc.h"
 #include "kernel/lapic.h"
+#include "libc/kprint.h"
 
 #define HD_NUM 2
 #define SYSTEM_PARAM_ADDR 0x9000
@@ -208,7 +208,7 @@ void startothers(void)
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
 
-    lapicstartap(c->apicid, code);
+    lapicstartap(c->apicid, (unsigned int)code);
 
     kprintf("wait for start cpu %d %x %x\n", c->apicid, stack, code);
     // wait for cpu to finish start

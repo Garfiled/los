@@ -5,7 +5,7 @@ OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o kernel/swtch.o}
 
 # Change this if your cross-compiler is somewhere else
 SRC_DIR=./
-CC = gcc -fno-pic
+CC = g++ -fno-pic
 GDB = gdb
 LD = ld -m elf_i386
 # -g: Use debugging symbols in gcc

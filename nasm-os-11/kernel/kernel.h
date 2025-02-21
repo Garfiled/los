@@ -1,10 +1,19 @@
 #pragma once
 
+#include <stdint.h>
+
 extern uint32_t tick;
 extern uint32_t entry_pg_dir[];
 extern uint32_t entry_pg_dir2[];
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void kernel_main();
+#ifdef __cplusplus
+}
+#endif
+
 void *hd_setup(void *addr);
 void user_input(char *input);
 void startothers();

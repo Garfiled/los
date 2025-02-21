@@ -70,7 +70,7 @@ void* alloc_pte_for_proc()
 
   //kprintf("debug>%x %d %x\n", esp(), ebp(), pg_dir_phy_addr);
 
-  return pg_dir_phy_addr;
+  return (void*)pg_dir_phy_addr;
 }
 
 void free_pte_for_proc(uint32_t phy_addr)
@@ -82,7 +82,7 @@ void free_pte_for_proc(uint32_t phy_addr)
   // 找到当前未做映射的page_table， TODO 处理并发问题
   if (*page_table != 0) {
     // 已被占用
-    return NULL;
+    return;
   }
   for (int i=1; i < 1024; i++) {
     asm("invlpg (%0)" : :  "r"(map_address));
@@ -96,7 +96,7 @@ void free_pte_for_proc(uint32_t phy_addr)
     for (int j=0; j < 1024; j++) {
       uint32_t pte_addr = map_address[j];
       if (pte_addr > 0) {
-         free_page(pte_addr & (~0x3), 1);
+         free_page((void*)(pte_addr & (~0x3)), 1);
       }
     }
   }
@@ -229,7 +229,7 @@ void free_page_by_pid(uint32_t pid)
 uint32_t *find_page_table(uint32_t address)
 {
   // 虚拟地址空间2G + 4M映射了页目录
-  uint32_t *page_dir_addr = MAP_PAGE_TABLE_PG_DIR;
+  uint32_t *page_dir_addr = (uint32_t *)MAP_PAGE_TABLE_PG_DIR;
 
   //asm("invlpg (%0)" : :  "r"(page_dir_addr));
   // 高10位存放的是dir offset

@@ -1,11 +1,11 @@
 #include "fs/naive_fs.h"
 #include "fs/vfs.h"
 #include "drivers/hd.h"
-#include "libc/string.h"
 #include "libc/kprint.h"
 #include "cpu/x86.h"
-#include "mm/alloc.h"
 #include <stddef.h>
+#include "libc/kprint.h"
+#include "libc/string.h"
 
 fs_t naive_fs;
 uint32_t file_num;

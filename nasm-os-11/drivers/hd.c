@@ -2,10 +2,10 @@
 #include "cpu/ports.h"
 #include "libc/function.h"
 #include "libc/string.h"
-#include "libc/kprint.h"
 #include "drivers/screen.h"
 #include "drivers/hd.h"
 #include "mm/alloc.h"
+#include "libc/kprint.h"
 
 struct hd_request
 {
@@ -25,9 +25,8 @@ static void hd_interrupt(registers_t *regs) {
   //kprintf("--hd_interrupt status:%d\n", status);
 }
 
-void init_hd(uint32_t freq)
+void init_hd()
 {
-  UNUSED(freq);
   register_interrupt_handler(IRQ14, hd_interrupt);
 
    /* Send the command */
@@ -103,10 +102,11 @@ void read_hd(bool is_master_device, char* buf, uint32_t offset, uint32_t size)
   } else {
     size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
   }
-  char *buf_align = alloc_mm_align(size_align);
-  // kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
+  kprintf("read_hd debug>\n");
+  char *buf_align = (char*)alloc_mm_align(size_align);
+  kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
   hd_rw(is_master_device, offset_align/512, HD_READ, size_align/512, buf_align);
-  //kprint("--read_hd_data: ");
+  // kprint("--read_hd_data: ");
   //kprint_hex_n((char*)curr_hd_request.buf, 10);
   //kprint("\n");
   MEMMOVE(buf, buf_align + offset - offset_align, size);
@@ -122,7 +122,7 @@ void read_hd_split(bool is_master_device, char* buf, uint32_t offset, uint32_t s
   } else {
     size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
   }
-  char *buf_align = alloc_mm_align(size_align);
+  char *buf_align = (char*)alloc_mm_align(size_align);
   //kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
   if (size_align > 512) {
     for (int i=0;i<size_align/512;i++) {

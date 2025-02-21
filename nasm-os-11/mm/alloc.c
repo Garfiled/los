@@ -8,29 +8,29 @@ uint32_t heap_curr_addr = heap_start_addr;
 void *alloc_mm(int size)
 {
   // find fit
-	uint32_t addr = heap_start_addr;
-	void *alloc_addr = NULL;
-	mm_desc *find_mm = NULL;
-	while (addr < heap_curr_addr) {
-	  find_mm = (mm_desc*)addr;
-		if (find_mm->free_ && find_mm->len_ >= size && find_mm->len_ / 2 < size) {
+  uint32_t addr = heap_start_addr;
+  void *alloc_addr = NULL;
+  mm_desc *find_mm = NULL;
+  while (addr < heap_curr_addr) {
+    find_mm = (mm_desc*)addr;
+  	if (find_mm->free_ && find_mm->len_ >= size && find_mm->len_ / 2 < size) {
       find_mm->free_ = false;
-			alloc_addr = (void*)(addr + sizeof(mm_desc));
-		  break;
-		} else {
-		  addr += sizeof(mm_desc) + find_mm->len_;
-		}
-	}
-	if (alloc_addr != NULL) {
-	  return alloc_addr;
-	}
-	mm_desc *mm = (mm_desc*)heap_curr_addr;
-	mm->free_ = false;
-	mm->len_ = size;
-	mm->prev_ = find_mm;
-	alloc_addr = (void*)(heap_curr_addr + sizeof(mm_desc));
-	heap_curr_addr += sizeof(mm_desc) + size;
-	return alloc_addr;
+  	  alloc_addr = (void*)(addr + sizeof(mm_desc));
+  	  break;
+  	} else {
+  	  addr += sizeof(mm_desc) + find_mm->len_;
+  	}
+  }
+  if (alloc_addr != NULL) {
+    return alloc_addr;
+  }
+  mm_desc *mm = (mm_desc*)heap_curr_addr;
+  mm->free_ = false;
+  mm->len_ = size;
+  mm->prev_ = find_mm;
+  alloc_addr = (void*)(heap_curr_addr + sizeof(mm_desc));
+  heap_curr_addr += sizeof(mm_desc) + size;
+  return alloc_addr;
 }
 
 void* alloc_mm_align(int size)
@@ -74,7 +74,7 @@ void* alloc_mm_align(int size)
 	mm->free_ = false;
 	mm->len_ = size;
 	mm->prev_ = find_mm;
-	alloc_addr = heap_curr_addr + sizeof(mm_desc);
+	alloc_addr = (void*)(heap_curr_addr + sizeof(mm_desc));
 	heap_curr_addr += sizeof(mm_desc) + size;
 	return alloc_addr;
 }

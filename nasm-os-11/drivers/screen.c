@@ -20,7 +20,7 @@ int get_offset_col(int offset);
  * Print a message on the specified location
  * If col, row, are negative, we will use the current offset
  */
-int kprint_at(char *message, int col, int row) {
+int kprint_at(const char *message, int col, int row) {
   /* Set cursor if col/row are negative */
   int offset;
   if (col >= 0 && row >= 0)
@@ -41,8 +41,9 @@ int kprint_at(char *message, int col, int row) {
   }
   return i;
 }
-void kprint_k(char *message, int k) {
-	int offset,col,row;
+void kprint_k(char *message, int k)
+{
+  int offset,col,row;
   offset = get_cursor_offset();
   row = get_offset_row(offset);
   col = get_offset_col(offset);
@@ -57,7 +58,7 @@ void kprint_k(char *message, int k) {
   }
 }
 
-int kprint(char *message) {
+int kprint(const char *message) {
   return kprint_at(message, -1, -1);
 }
 
@@ -112,7 +113,7 @@ void kprint_hex_n(char *message, int n)
 
 
 /**
- * Innermost print function for our kernel, directly accesses the video memory 
+ * Innermost print function for our kernel, directly accesses the video memory
  *
  * If 'col' and 'row' are negative, we will print at current cursor location
  * If 'attr' is zero it will use 'white on black' as default
@@ -149,7 +150,7 @@ int print_char(char c, int col, int row, char attr) {
     /* Check if the offset is over screen size and scroll */
     if (offset >= MAX_ROWS * MAX_COLS * 2) {
         int i;
-        for (i = 1; i < MAX_ROWS; i++) 
+        for (i = 1; i < MAX_ROWS; i++)
             memory_copy((uint8_t*)(get_offset(0, i) + VIDEO_ADDRESS),
                         (uint8_t*)(get_offset(0, i-1) + VIDEO_ADDRESS),
                         MAX_COLS * 2);

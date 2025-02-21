@@ -6,6 +6,7 @@
 #include "kernel/page.h"
 #include "kernel/kernel.h"
 #include "kernel/elf.h"
+#include "kernel/lapic.h"
 #include "fs/vfs.h"
 
 struct {
@@ -58,7 +59,7 @@ found:
   }
   // stack 1G+3K
   p->stack = MAP_STACK_ADDR + 3 * 1024;
-  p->entry = entry_func;
+  p->entry = (uint32_t)(entry_func);
   //MEMSET(p->context, 0, sizeof *p->context);
   p->killed = 0;
   p->state = RUNNABLE;
@@ -100,19 +101,19 @@ void scheduler(void)
 
       swtch(p->stack, p->entry);
       // It should have changed its p->state before coming back.
-      set_cr3(entry_pg_dir);
+      set_cr3((uint32_t)(entry_pg_dir));
       release_proc(p);
     }
   }
 }
 
-int process_exec(char *path, int argc, char *argv[])
+int process_exec(const char *path, int argc, char *argv[])
 {
   // kprintf("process_exec>\n");
   UNUSED(path);
   UNUSED(argc);
   UNUSED(argv);
-  alloc_proc(exec);
+  alloc_proc((void*)exec);
   return 0;
 }
 

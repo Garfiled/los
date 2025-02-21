@@ -1,8 +1,11 @@
 #pragma once
 
-#include "cpu/x86.h"
+#include <stdint.h>
 
 /* ISRs reserved for CPU exceptions */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void isr0();
 extern void isr1();
 extern void isr2();
@@ -53,6 +56,9 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 extern void irq128();
+#ifdef __cplusplus
+}
+#endif
 
 #define IRQ0 32
 #define IRQ1 33
@@ -86,7 +92,15 @@ typedef struct {
 } registers_t;
 
 void isr_install();
+#ifdef __cplusplus
+extern "C" {
+#endif
 void isr_handler(registers_t *r);
+void irq_handler(registers_t *r);
+#ifdef __cplusplus
+}
+#endif
+
 void irq_install();
 
 typedef void (*isr_t)(registers_t*);

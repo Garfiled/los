@@ -26,7 +26,7 @@ static struct mp* mpsearch1(unsigned int a, int len)
 {
   unsigned char *e, *p, *addr;
 
-  addr = P2V(a);
+  addr = (unsigned char*)(a);
   e = addr+len;
   for(p = addr; p < e; p += sizeof(struct mp)) {
     if(STRCMPN(p, "_MP_", 4) == 0 && sum(p, sizeof(struct mp)) == 0) {

@@ -1,11 +1,12 @@
 #include "libc/string.h"
-#include "libc/kprint.h"
+#include "drivers/screen.h"
 #include "cpu/ports.h"
 #include <stdarg.h>
 
-void serial_putc(char c) {
-    while ((port_byte_in(0x3F8 + 5) & 0x20) == 0); // 等待发送缓冲区为空
-    port_byte_out(0x3F8, c);
+void serial_putc(char c)
+{
+  while ((port_byte_in(0x3F8 + 5) & 0x20) == 0); // 等待发送缓冲区为空
+  port_byte_out(0x3F8, c);
 }
 
 void putchar(char c)
@@ -27,7 +28,7 @@ int puts(char *str)
   return r;
 }
 
-int kprintf(char *fmt, ...)
+int kprintf(const char *fmt, ...)
 {
 	//显示数字缓冲区
 	char buff[0x800];
