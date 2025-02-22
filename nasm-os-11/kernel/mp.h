@@ -18,32 +18,31 @@ struct mp {
     uint8_t reserved[3];      // 保留
 } __attribute__((packed));    // 总大小应为 16 字节
 
-struct mpconf {
-    char signature[4];            // "PCMP"
-    uint16_t length;              // 表长度（以 16 字节为单位）
-    uint8_t spec_rev;             // 规范版本
-    uint8_t checksum;             // 所有字节和为 0
-    char oem_id[8];               // OEM 标识符
-    char product_id[12];          // 产品标识符
-    uint32_t oem_table_ptr;       // OEM 表指针（物理地址）
-    uint16_t oem_table_length;    // OEM 表长度
-    uint16_t entry_count;         // 条目数量
-    uint32_t lapic_addr;          // Local APIC 地址（物理地址）
-    uint16_t ext_table_length;    // 扩展表长度
-    uint8_t ext_table_checksum;   // 扩展表校验和
-    uint8_t reserved;             // 保留
-} __attribute__((packed));        // 总大小应为 44 字节
+struct mpconf {         // configuration table header
+  unsigned char signature[4];           // "PCMP"
+  unsigned short length;                // total table length
+  unsigned char version;                // [14]
+  unsigned char checksum;               // all bytes must add up to 0
+  unsigned char product[20];            // product id
+  unsigned int *oemtable;               // OEM table pointer
+  unsigned short oemlength;             // OEM table length
+  unsigned short entry;                 // entry count
+  unsigned int *lapicaddr;              // address of local APIC
+  unsigned short xlength;               // extended table length
+  unsigned char xchecksum;              // extended table checksum
+  unsigned char reserved;
+} __attribute__((packed));
 
-struct mpproc {
-    unsigned char type;        // 0x00 表示MPPROC
-    unsigned char length;      // 应为20字节
-    unsigned char apicid;      // APIC ID
-    unsigned char apicver;     // APIC版本
-    unsigned char cpuflags;    // CPU标志（如启用状态）
-    unsigned char reserved[3]; // 保留字段
-    uint32_t featureflags;  // 特性标志
-    uint32_t reserved2[2];  // 保留
-} __attribute__((packed)); // 确保无填充
+struct mpproc {         // processor table entry
+  unsigned char type;                   // entry type (0)
+  unsigned char apicid;                 // local APIC id
+  unsigned char version;                // local APIC verison
+  unsigned char flags;                  // CPU flags
+    #define MPBOOT 0x02           // This proc is the bootstrap processor.
+  unsigned char signature[4];           // CPU signature
+  unsigned int feature;                 // feature flags from CPUID instruction
+  unsigned char reserved[8];
+};
 
 struct mpioapic {       // I/O APIC table entry
   unsigned char type;                   // entry type (2)

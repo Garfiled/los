@@ -7,6 +7,8 @@
 #include "kernel/proc.h"
 #include "libc/kprint.h"
 #include "libc/string.h"
+#include "cpu/ports.h"
+#include "kernel/lapic.h"
 
 struct cpu cpus[NCPU];
 int ncpu;
@@ -102,6 +104,62 @@ static struct mpconf* mpconfig(struct mp **pmp)
 
 void mpinit(void)
 {
+  unsigned char *p, *e;
+  int ismp;
+  struct mp *mp;
+  struct mpconf *conf;
+  struct mpproc *proc;
+  struct mpioapic *ioapic;
+
+  if((conf = mpconfig(&mp)) == 0) {
+    kprintf("Expect to run on an SMP!\n");
+    return;
+  }
+  ismp = 1;
+  lapic = (unsigned int*)conf->lapicaddr;
+  kprintf("mpinit: %d %x\n", *lapic, lapic);
+  for(p=(unsigned char*)(conf+1), e=(unsigned char*)conf+conf->length; p<e; ){
+    switch(*p){
+    case MPPROC:
+      proc = (struct mpproc*)p;
+      if(ncpu < NCPU) {
+        cpus[ncpu].apicid = proc->apicid;  // apicid may differ from ncpu
+        kprintf("cpu %d %d\n", ncpu, proc->apicid);
+        ncpu++;
+      }
+      p += sizeof(struct mpproc);
+      continue;
+    case MPIOAPIC:
+      ioapic = (struct mpioapic*)p;
+      ioapicid = ioapic->apicno;
+      p += sizeof(struct mpioapic);
+      continue;
+    case MPBUS:
+    case MPIOINTR:
+    case MPLINTR:
+      p += 8;
+      continue;
+    default:
+      ismp = 0;
+      break;
+    }
+  }
+  if(!ismp) {
+    kprintf("Didn't find a suitable machine!\n");
+    return;
+  }
+  kprintf("mpinit cpu num = %d\n", ncpu);
+
+  if(mp->imcr_present){
+    // Bochs doesn't support IMCR, so this doesn't run on Bochs.
+    // But it would on real hardware.
+    port_byte_out(0x22, 0x70);
+    port_byte_out(0x23, port_byte_in(0x23) | 1);
+  }
+}
+
+void mpinit1(void)
+{
   struct mpconf* conf;
   struct mp* mp;
 
@@ -118,7 +176,7 @@ void mpinit(void)
     return;
   }
 
-  kprintf("MP configuration table contents: %x %d\n",conf, conf->entry_count);
+  kprintf("MP configuration table contents: %x %d\n",conf, conf->entry);
   int print_length = total_length < 256 ? total_length : 256;
   for (int i = 0; i < print_length; i++) {
     kprintf("%d ", ((unsigned char*)conf)[i]);
@@ -154,5 +212,4 @@ void mpinit(void)
     }
   }
   kprintf("Found %d CPUs\n", ncpu);
-  // hang();
 }

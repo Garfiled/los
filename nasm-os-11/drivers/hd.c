@@ -102,9 +102,8 @@ void read_hd(bool is_master_device, char* buf, uint32_t offset, uint32_t size)
   } else {
     size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
   }
-  kprintf("read_hd debug>\n");
   char *buf_align = (char*)alloc_mm_align(size_align);
-  kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
+  //kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
   hd_rw(is_master_device, offset_align/512, HD_READ, size_align/512, buf_align);
   // kprint("--read_hd_data: ");
   //kprint_hex_n((char*)curr_hd_request.buf, 10);

@@ -43,11 +43,13 @@ void kernel_main()
   init_entry_page();
 
   // start other processor
-  //startothers();
+  // startothers();
 
   set_cr3((uint32_t)entry_pg_dir);
 
   open_mm_page();
+  asm("invlpg (%0)" : :  "r"(MAP_PAGE_TABLE_PG_DIR));
+
   register_interrupt_handler(14, page_fault_handler);
 
   // 初始化文件系统
@@ -240,6 +242,7 @@ uint32_t reserve_for_map[1024];
 
 void init_entry_page()
 {
+  kprintf("entry_pg: %x %x\n", entry_pg_dir, entry_pg_table);
   MEMSET(entry_pg_dir, 0 , 4096);
   MEMSET(entry_pg_table, 0 , 4096);
   MEMSET(reserve_for_map, 0 , 4096);

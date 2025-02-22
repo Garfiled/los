@@ -123,7 +123,7 @@ uint32_t *map_process = NULL;
 // 物理内存
 void install_alloc()
 {
-  //位图所在的固定内存区域为 [0x100000, 0x200000)
+  //位图所在的固定内存区域为 [0x100000, 0x200000) 1M ~ 2M
   // 每个字节映射4k的话，一共可以映射4GB的内存空间
   mmap = (uint8_t *) MMAP;
   for (uint32_t i = 0; i < MAP_SIZE_LOGIC; i++) {
@@ -229,7 +229,8 @@ void free_page_by_pid(uint32_t pid)
 uint32_t *find_page_table(uint32_t address)
 {
   // 虚拟地址空间2G + 4M映射了页目录
-  uint32_t *page_dir_addr = (uint32_t *)MAP_PAGE_TABLE_PG_DIR;
+  uint32_t *page_dir_addr = (uint32_t*)MAP_PAGE_TABLE_PG_DIR;
+  //kprintf("find_page_table debug>>>:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
 
   //asm("invlpg (%0)" : :  "r"(page_dir_addr));
   // 高10位存放的是dir offset
@@ -239,15 +240,17 @@ uint32_t *find_page_table(uint32_t address)
   //kprintf("find_page_table:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
   //kprintf("find_page_table: %d %d %x\n", page_dir_offset, page_table_offset, address);
   /*
+  open_debug = false;
   if (open_debug) {
     kprintf("debug>>%x %x\n", esp(), cr3());
-    pp = cr3();
+    uint32_t pp = cr3();
     kprintf("debug>>>:%x %x\n", pp, cr3());
     asm volatile(
       "movl %cr0, %eax;"
       "and $~(1 << 31), %eax;"
       "movl %eax, %cr0;"
-  );
+    );
+
     asm volatile("movl %%eax, %%esp" :: "a"(0x400000));
     kprintf("close_mm_page:%x\n", pp);
     kprintf("pde entry>>>%x %x %x %x %x\n",pp, pp[0], pp[1], pp[512],pp[513]);
@@ -290,7 +293,7 @@ void page_fault_handler(registers_t *r)
 {
   uint32_t faulting_address;
   asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
-  //kprintf("--page fault %x!\n", faulting_address);
+  // kprintf("--page fault %x!\n", faulting_address);
 
   // page not present?
   int present = r->err_code & 0x1;
