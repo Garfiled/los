@@ -3,8 +3,7 @@
 #include "mm/alloc.h"
 #include "libc/kprint.h"
 #include "kernel/page.h"
-
-#define UNUSED(x) (void)(x)
+#include "libc/function.h"
 
 tcb_t* init_thread(char* name,
                    thread_func function,

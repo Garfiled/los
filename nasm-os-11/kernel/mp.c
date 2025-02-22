@@ -168,7 +168,7 @@ void mpinit1(void)
 	hang();
     return;
   }
-  int total_length = conf->length;
+  uint32_t total_length = conf->length;
   kprintf("MP configuration table length: %d %d %x\n", conf->length, total_length, conf);
   kprintf("sizeof mpconf:%d mpproc:%d\n", sizeof(struct mpconf), sizeof(struct mpproc));
   if (total_length <= sizeof(struct mpconf) || total_length > 4096) {
@@ -211,5 +211,6 @@ void mpinit1(void)
       break;
     }
   }
+  UNUSED(ismp);
   kprintf("Found %d CPUs\n", ncpu);
 }

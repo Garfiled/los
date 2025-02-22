@@ -2,13 +2,12 @@
 
 #include <stdint.h>
 
-
 #define KERNEL_STACK_SIZE  8192
 
 struct task_struct {
   uint32_t kernel_esp;
   uint32_t kernel_stack;
-  
+
   uint32_t id;
   char name[32];
 

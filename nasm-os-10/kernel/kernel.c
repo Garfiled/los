@@ -38,7 +38,6 @@ void kernel_main()
 
   // phy memory mgr
   install_alloc();
-  hang();
 
   // 初始化processor启动过渡页表
   init_entry_page();

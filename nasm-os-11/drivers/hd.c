@@ -47,11 +47,15 @@ void init_hd()
 
 void hd_wait_ready()
 {
-  // 等待设备空闲
-  while (port_byte_in(HD_PORT_STATUS) < 0 ) {
-  }
-  while ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40) {
-  }
+    // 等待设备不再忙（BUSY位为0）
+    while (port_byte_in(HD_PORT_STATUS) & 0x80) { // 检查Bit7 (BUSY)
+        // 可选：添加短暂延迟或让出CPU以避免忙等待
+    }
+
+    // 等待设备就绪（READY位为1且BUSY位为0，即0x40）
+    while ((port_byte_in(HD_PORT_STATUS) & 0xC0) != 0x40) { // 检查Bit7和Bit6
+        // 同样可考虑延迟
+    }
 }
 
 void hd_rw(bool is_master_device, uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
@@ -124,7 +128,7 @@ void read_hd_split(bool is_master_device, char* buf, uint32_t offset, uint32_t s
   char *buf_align = (char*)alloc_mm_align(size_align);
   //kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
   if (size_align > 512) {
-    for (int i=0;i<size_align/512;i++) {
+    for (uint32_t i=0;i<size_align/512;i++) {
       hd_rw(is_master_device, (offset_align + 512 * i)/512, HD_READ, 512/512, buf_align + i * 512);
     }
   }

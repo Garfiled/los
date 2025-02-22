@@ -236,8 +236,8 @@ uint32_t *find_page_table(uint32_t address)
   uint32_t page_dir_offset = address >> 22;
   // 中间的10位存放的是page_table offset
   uint32_t page_table_offset = (address >> 12) & 0x3FF;
-  //kprintf("find_page_table:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
-  //kprintf("find_page_table: %d %d %x\n", page_dir_offset, page_table_offset, address);
+  kprintf("find_page_table:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
+  kprintf("find_page_table: %d %d %x\n", page_dir_offset, page_table_offset, address);
   /*
   if (open_debug) {
     kprintf("debug>>%x %x\n", esp(), cr3());
@@ -256,14 +256,17 @@ uint32_t *find_page_table(uint32_t address)
     hang();
   }
   */
+  kprintf("find_page_table debug1\n");
   uint32_t page_table_base = page_dir_addr[page_dir_offset];
+  kprintf("find_page_table debug2\n");
   // 注意这里的page_table_base非0的话也是物理地址，不能直接使用
   if (page_table_base == 0) {
     void *new_phy_page = alloc_page(1, 1, 0, 0);
     page_dir_addr[page_dir_offset] = (uint32_t)new_phy_page | 3;
   }
   uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (page_dir_offset * 1024 + page_table_offset));
-  //kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir_addr[page_dir_offset], page_table_base, page_table);
+  kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir_addr[page_dir_offset], page_table_base, page_table);
+  hang();
   return page_table;
 }
 
@@ -290,7 +293,7 @@ void page_fault_handler(registers_t *r)
 {
   uint32_t faulting_address;
   asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
-  //kprintf("--page fault %x!\n", faulting_address);
+  kprintf("--page fault %x!\n", faulting_address);
 
   // page not present?
   int present = r->err_code & 0x1;

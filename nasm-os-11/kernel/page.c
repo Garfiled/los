@@ -24,7 +24,7 @@ void* alloc_pte_for_proc()
   uint32_t can_map_address = MAP_PAGE_TABLE_UNUSE;
   uint32_t* map_address = (uint32_t*)can_map_address;
 
-  uint32_t* first_page_table = (uint32_t*)MAP_PAGE_TABLE_START;
+  //uint32_t* first_page_table = (uint32_t*)MAP_PAGE_TABLE_START;
   //kprintf("debug0: %x %x\n", first_page_table, *first_page_table);
   // 2GB ~ 2GB+4M 映射所有二级页表，如何做到的呢？ 只需要pg_dir[512] = pg_dir_phy | 3
   uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (can_map_address / PAGE_ALIGN_SIZE));
@@ -211,7 +211,7 @@ void free_page(void *addr, uint32_t count)
   //释放内存页
   for (uint32_t i = 0; i < count; i++) {
     //更新map中这些页的状态
-    mmap[(uint32_t) (addr + (i * PAGE_ALIGN_SIZE)) / PAGE_ALIGN_SIZE] = (MM_FREE | MM_CAN_SWAP | MM_NO_DYNAMIC);
+    mmap[(uint32_t)addr + (i * PAGE_ALIGN_SIZE) / PAGE_ALIGN_SIZE] = (MM_FREE | MM_CAN_SWAP | MM_NO_DYNAMIC);
     map_process[i] = 0;
   }
 }

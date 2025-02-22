@@ -79,7 +79,7 @@ void isr_install() {
 }
 
 /* To print the message which defines every exception */
-char *exception_messages[] = {
+const char *exception_messages[] = {
     "Division By Zero",
     "Debug",
     "Non Maskable Interrupt",

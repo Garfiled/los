@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fs/file.h"
+#include <stdint.h>
 
 struct naive_file_meta
 {

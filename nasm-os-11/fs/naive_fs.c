@@ -27,8 +27,7 @@ static naive_file_meta_t* find_file_meta(const char* filename)
   return NULL;
 }
 
-
-static int32_t naive_fs_stat_file(char* filename, file_stat_t* stat)
+static int32_t naive_fs_stat_file(const char* filename, file_stat_t* stat)
 {
   kprintf("naive_fs_stat_file: %x %s\n", file_num, filename);
   naive_file_meta_t* file_meta = find_file_meta(filename);
@@ -39,34 +38,17 @@ static int32_t naive_fs_stat_file(char* filename, file_stat_t* stat)
   return -1;
 }
 
-static int32_t naive_fs_list_dir(char* dir)
+static int32_t naive_fs_list_dir(const char* dir)
 {
   UNUSED(dir);
-  uint32_t size_length[file_num];
-  uint32_t max_length = 0;
   for (uint32_t i = 0; i < file_num; i++) {
     naive_file_meta_t* meta = file_metas + i;
-    uint32_t size = meta->size;
-    uint32_t length = 1;
-    while ((size /= 10) > 0) {
-      length++;
-    }
-    size_length[i] = length;
-    max_length = length > max_length ? length : max_length;
+	kprintf("%s %d\n", meta->filename, meta->size);
   }
-
-  for (uint32_t i = 0; i < file_num; i++) {
-    naive_file_meta_t* meta = file_metas + i;
-    kprintf("root  ");
-    for (uint32_t j = 0; j < max_length - size_length[i]; j++) {
-      kprintf(" ");
-    }
-    kprintf("%d  %s\n", meta->size, meta->filename);
-  }
-  return -1;
+  return 0;
 }
 
-static int32_t naive_fs_read_data(char* filename, char* buf, uint32_t start, uint32_t length)
+static int32_t naive_fs_read_data(const char* filename, char* buf, uint32_t start, uint32_t length)
 {
   naive_file_meta_t* file_meta = find_file_meta(filename);
   if (file_meta == NULL) {
@@ -83,8 +65,9 @@ static int32_t naive_fs_read_data(char* filename, char* buf, uint32_t start, uin
   return length;
 }
 
-static int32_t naive_fs_write_data(char* filename, char* buf, uint32_t offset, uint32_t length)
+static int32_t naive_fs_write_data(const char* filename, char* buf, uint32_t offset, uint32_t length)
 {
+  UNUSED(buf);
   naive_file_meta_t* file_meta = find_file_meta(filename);
   if (!file_meta) {
     return -1; // 文件不存在

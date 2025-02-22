@@ -14,7 +14,7 @@ void kernel_main();
 }
 #endif
 
-void *hd_setup(void *addr);
+void* hd_setup(char *addr);
 void user_input(char *input);
 void startothers();
 void mpenter();

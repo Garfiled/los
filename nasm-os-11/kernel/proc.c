@@ -120,7 +120,9 @@ int process_exec(const char *path, int argc, char *argv[])
 int exec(char *path, int argc, char *argv[])
 {
   // kprintf("exec>>>>>>>>>>>>>>>>\n");
-  path = "hello";
+  UNUSED(argc);
+  UNUSED(argv);
+  path = (char*)"hello";
 
     // Read elf binary file.
   file_stat_t stat;
@@ -131,7 +133,7 @@ int exec(char *path, int argc, char *argv[])
   uint32_t size = stat.size;
   kprintf("read_file: name=%s size=%d\n", path, stat.size);
   char* read_buffer = (char*)alloc_mm(size);
-  if (read_file(path, read_buffer, 0, size) != size) {
+  if (read_file(path, read_buffer, 0, size) != (int32_t)(size)) {
     kprintf("Failed to load cmd %s\n", path);
     free_mm(read_buffer);
     return -1;

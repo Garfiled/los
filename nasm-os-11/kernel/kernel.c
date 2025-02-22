@@ -28,7 +28,7 @@ void kernel_main()
   isr_install();
   irq_install();
 
-  hd_setup((void*)(SYSTEM_PARAM_ADDR));
+  hd_setup((char*)(SYSTEM_PARAM_ADDR));
 
   init_syscall();
 
@@ -48,7 +48,6 @@ void kernel_main()
   set_cr3((uint32_t)entry_pg_dir);
 
   open_mm_page();
-  asm("invlpg (%0)" : :  "r"(MAP_PAGE_TABLE_PG_DIR));
 
   register_interrupt_handler(14, page_fault_handler);
 
@@ -62,9 +61,9 @@ void kernel_main()
   scheduler();
 }
 
-void* hd_setup(void* addr)
+void* hd_setup(char* addr)
 {
-  hd_num = *((char*)addr);
+  hd_num = *addr;
   kprintf("hd_setup hd_num:%d\n", hd_num);
   addr++;
 
@@ -182,6 +181,8 @@ void user_input(char *input) {
     kprintf("-- alloc_buf=%x\n", alloc_buf);
   } else if (strcmp(cmd[0], "writemem") == 0) {
     memcpy((char*)(atoi(cmd[1])), cmd[2], strlen(cmd[2]));
+  } else if (strcmp(cmd[0], "ls") == 0) {
+	list_dir("/");
   }
   kprint("los> ");
 }

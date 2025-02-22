@@ -15,7 +15,7 @@ void putchar(char c)
   serial_putc(c);
 }
 
-int puts(char *str)
+int puts(const char *str)
 {
   int r = kprint(str);
   int i = 0;
@@ -50,7 +50,7 @@ int kprintf(const char *fmt, ...)
 		if (*fmt == '%') {
 			//显示一个字符
 			if ('c' == *(fmt + 1)) {
-				ch = va_arg(args, char);
+				ch = va_arg(args, int);
 				putchar(ch);
 				count++;
 				fmt += 2;
