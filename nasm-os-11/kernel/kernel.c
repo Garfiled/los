@@ -183,6 +183,15 @@ void user_input(char *input) {
     memcpy((char*)(atoi(cmd[1])), cmd[2], strlen(cmd[2]));
   } else if (strcmp(cmd[0], "ls") == 0) {
 	list_dir("/");
+  } else if (strcmp(cmd[0], "write") == 0) {
+	write_file(cmd[1], cmd[2], atoi(cmd[3]), atoi(cmd[4]));
+  } else if (strcmp(cmd[0], "read") == 0) {
+	uint32_t offset = atoi(cmd[2]);
+	uint32_t length = atoi(cmd[3]);
+	char * buf = (char*)alloc_mm(length);
+	read_file(cmd[1], buf, offset, length);
+	kprint_k(buf, length);
+	kprintf("\n");
   }
   kprint("los> ");
 }

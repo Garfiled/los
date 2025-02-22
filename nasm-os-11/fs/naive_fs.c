@@ -60,24 +60,24 @@ static int32_t naive_fs_read_data(const char* filename, char* buf, uint32_t star
   if (length > size) {
     length = size;
   }
-  uint32_t phy_offset = naive_fs.partition.offset + offset + start;
-  read_hd_split(false, buf, phy_offset, length);
+  uint32_t device_addr = naive_fs.partition.offset + offset + start;
+  read_hd_split(false, buf, device_addr, length);
   return length;
 }
 
 static int32_t naive_fs_write_data(const char* filename, char* buf, uint32_t offset, uint32_t length)
 {
-  UNUSED(buf);
   naive_file_meta_t* file_meta = find_file_meta(filename);
   if (!file_meta) {
+	kprintf("file not exist:%s\n", filename);
     return -1; // 文件不存在
   }
 
   if (offset + length > file_meta->size) {
-      return -1; // 超出文件范围
+	kprintf("offset and length overflow:%d %d\n", offset, length);
+    return -1; // 超出文件范围
   }
-
-  // write_hd_split(false, buf, naive_fs.partition.offset + file_meta->offset + offset, length);
+  write_hd_split(false, buf, naive_fs.partition.offset + file_meta->offset + offset, length);
   return length;
 }
 

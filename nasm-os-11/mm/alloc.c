@@ -1,7 +1,5 @@
 #include <stddef.h>
 #include <stdint.h>
-#include "libc/kprint.h"
-#include "cpu/x86.h"
 #include "mm/alloc.h"
 
 const uint32_t heap_start_addr = 20 * 1024 * 1024;
