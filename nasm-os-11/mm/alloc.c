@@ -83,7 +83,6 @@ void free_mm(void* addr)
   mm_desc *mm = (mm_desc*)((char*)addr - sizeof(mm_desc));
   mm->free_ = true;
   // TO merge prev
-  /*
   mm_desc *prev = mm->prev_;
   while (prev != NULL) {
     if (prev->free_) {
@@ -94,24 +93,16 @@ void free_mm(void* addr)
   	  break;
   	}
   }
-// TO merge next
+  // TO merge next
   uint32_t next = (uint32_t)mm + sizeof(mm_desc) + mm->len_;
-	while (next < heap_curr_addr) {
-	  mm_desc *mm_next = (mm_desc*)next;
+  while (next < heap_curr_addr) {
+    mm_desc *mm_next = (mm_desc*)next;
+	mm_next->prev_ = mm;
     if (mm_next->free_) {
-	    mm->len_ += sizeof(mm_desc) + mm_next->len_;
-			next = (uint32_t)mm + sizeof(mm_desc) + mm->len_;
-		  if (next < heap_curr_addr) {
-			  mm_next = (mm_desc*)next;
-				mm_next->prev_ = mm;
-			}
-		} else {
-		  break;
-		}
+	  mm->len_ += sizeof(mm_desc) + mm_next->len_;
+	  next = (uint32_t)mm_next + sizeof(mm_desc) + mm->len_;
+	} else {
+	  break;
 	}
-
-	if ((uint32_t)mm + mm->len_ + sizeof(mm_desc) == heap_curr_addr) {
-	  heap_curr_addr = (uint32_t)mm;
-	}
-	*/
+  }
 }

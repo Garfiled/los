@@ -247,21 +247,15 @@ uint32_t entry_pg_dir[1024];
 __attribute__((__aligned__(4096)))
 uint32_t entry_pg_table[1024];
 
-__attribute__((__aligned__(4096)))
-uint32_t reserve_for_map[1024];
-
 void init_entry_page()
 {
   kprintf("entry_pg: %x %x\n", entry_pg_dir, entry_pg_table);
   MEMSET(entry_pg_dir, 0 , 4096);
   MEMSET(entry_pg_table, 0 , 4096);
-  MEMSET(reserve_for_map, 0 , 4096);
   entry_pg_dir[0] = (uint32_t)entry_pg_table | 3;
-  entry_pg_dir[MAP_PDE_IDX] = (uint32_t)entry_pg_dir | 3;
-  entry_pg_dir[MAP_PG_DIR_PDE_IDX] = (uint32_t)reserve_for_map | 3;
   // virtual address 0~4M -> phy address 0~4M
   for (int i = 0; i < 1024; i++) {
     entry_pg_table[i] = (i * 4096) | 3;
   }
-  reserve_for_map[0] = (uint32_t)entry_pg_dir | 3;
+  entry_pg_dir[MAP_PDE_IDX] = (uint32_t)entry_pg_dir | 3;
 }

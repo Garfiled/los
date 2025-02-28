@@ -2,7 +2,6 @@
 #include "cpu/isr.h"
 #include "cpu/ports.h"
 #include "libc/function.h"
-#include "drivers/screen.h"
 #include "libc/kprint.h"
 
 uint32_t tick = 0;
@@ -10,9 +9,9 @@ uint32_t tick = 0;
 static void timer_callback(registers_t *regs)
 {
   UNUSED(regs);
-  tick++;
+  __atomic_fetch_add(&tick, 1, __ATOMIC_SEQ_CST);
   if (tick % 1000 == 0) {
-    // kprintf("timer_callback tick... %d\n", tick);
+    kprintf("timer_callback tick... %d\n", tick);
   }
 }
 
