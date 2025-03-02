@@ -13,6 +13,7 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+struct proc *current_proc = NULL;
 int nextpid = 1;
 
 // Must be called with interrupts disabled to avoid the caller being
@@ -57,9 +58,9 @@ found:
     kprintf("failed to alloc_pte_for_proc\n");
     return NULL;
   }
-  // stack 1G+3K
   p->stack = MAP_STACK_ADDR + 3 * 1024;
   p->entry = (uint32_t)(entry_func);
+  p->context.eip = p->entry;
   //MEMSET(p->context, 0, sizeof *p->context);
   p->killed = 0;
   p->state = RUNNABLE;
@@ -68,7 +69,7 @@ found:
 
 void release_proc(struct proc* p)
 {
-  kprintf("release_proc\n");
+  LOGI("release_proc:%d\n", p->pid);
   p->state = ZOMBIE;
   p->pid = 0;
   p->stack = 0;
@@ -85,25 +86,32 @@ void test_proc()
   kprintf("cr3:%x esp:%x\n",cr3(), esp());
 }
 
-void scheduler(void)
+void schedule(void)
 {
-  struct proc *p;
-
   for(;;) {
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-
-      p->state = RUNNING;
-      // kprintf("scheduler> pid:%d pgdir:%x stack:%x esp:%x\n", p->pid, p->pgdir, p->stack, esp());
-      set_cr3(p->pgdir);
-      // kprintf("cr3:%x esp:%x\n",cr3(), esp());
-
-      swtch(p->stack, p->entry);
-      // It should have changed its p->state before coming back.
+	struct proc* candi_p = NULL;
+	int candi_score = 0;
+    for(struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE) {
+	    if (candi_p == NULL || candi_p->time_quantum < candi_score) {
+		  candi_p = p;
+		  candi_score = candi_p->time_quantum;
+		}
+	  }
+	}
+	if (candi_p == NULL) {
+	  current_proc = NULL;
+	} else if (current_proc != candi_p) {
+      candi_p->state = RUNNING;
+	  candi_p->time_quantum = TIME_QUANTUM;
+      set_cr3(candi_p->pgdir);
+	  current_proc = candi_p;
+	  // 上下文切换
+	  swtch(candi_p->stack, candi_p->context.eip);
+      // 当切换回来时恢复原页表
       set_cr3((uint32_t)(entry_pg_dir));
-      release_proc(p);
-    }
+	  release_proc(candi_p);
+	}
   }
 }
 
@@ -119,7 +127,6 @@ int process_exec(const char *path, int argc, char *argv[])
 
 int exec(char *path, int argc, char *argv[])
 {
-  // kprintf("exec>>>>>>>>>>>>>>>>\n");
   UNUSED(argc);
   UNUSED(argv);
   path = (char*)"hello";
@@ -131,10 +138,10 @@ int exec(char *path, int argc, char *argv[])
     return -1;
   }
   uint32_t size = stat.size;
-  kprintf("read_file: name=%s size=%d\n", path, stat.size);
+  LOGD("read_file: name=%s size=%d\n", path, stat.size);
   char* read_buffer = (char*)alloc_mm(size);
   if (read_file(path, read_buffer, 0, size) != (int32_t)(size)) {
-    kprintf("Failed to load cmd %s\n", path);
+    LOGE("Failed to load cmd %s\n", path);
     free_mm(read_buffer);
     return -1;
   }
@@ -143,12 +150,12 @@ int exec(char *path, int argc, char *argv[])
   // Load elf binary.
   uint32_t exec_entry;
   if (load_elf(read_buffer, &exec_entry)) {
-    kprintf("load elf fail\n");
+    LOGE("load elf fail\n");
     free_mm(read_buffer);
     return -1;
   }
 
-  kprintf("call_elf on entry:%x\n", exec_entry);
+  LOGD("call_elf on entry:%x\n", exec_entry);
   asm volatile("movl %%eax, %%edx" :: "a"(exec_entry));
   asm volatile("call %edx");
   free_mm(read_buffer);

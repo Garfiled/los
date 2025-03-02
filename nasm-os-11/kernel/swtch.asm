@@ -1,6 +1,6 @@
 ;Context switch
 
-STACK_SAVE_ADDR equ 0x40000000 + 4096 - 4
+STACK_SAVE_ADDR equ 0xC0000000 + 4096 - 4
   global swtch
 swtch:
   mov eax, [esp + 4] ; stack

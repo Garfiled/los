@@ -9,10 +9,10 @@
 
 void* alloc_pte_for_proc()
 {
-  kprintf("alloc_pte_for_proc start\n");
+  LOGD("alloc_pte_for_proc start\n");
   void *phy_addr = alloc_page(1, 4, 0, 0);
   if (phy_addr == NULL) {
-	kprintf("failed to alloc phy page!\n");
+	LOGE("failed to alloc phy page!\n");
     return NULL;
   }
   uint32_t pg_dir_phy_addr = (uint32_t)phy_addr;
@@ -29,6 +29,7 @@ void* alloc_pte_for_proc()
   // 找到当前未做映射的page_table， TODO 处理并发问题
   if (*page_table != 0) {
     // 已被占用
+	LOGW("page_table is not null\n");
     return NULL;
   }
 
@@ -185,7 +186,7 @@ void* alloc_page(uint32_t process_id, uint32_t count, uint32_t can_swap, uint32_
     mmap[start_with + i] = MM_USED | MM_CAN_SWAP; //(MM_USED | ((uint32_t) can_swap << 1) | ((uint32_t) is_dynamic << 2));
     map_process[start_with + i] = process_id;
   }
-  //kprintf("alloc_page: addr=%x count=%d\n", ret, count);
+  LOGD("alloc_phy_page: addr=%x count=%d\n", ret, count);
   //返回查找到内存地址
   return ret;
 }
@@ -218,47 +219,21 @@ void free_page_by_pid(uint32_t pid)
 
 uint32_t *find_page_table(uint32_t address)
 {
-  // 虚拟地址空间2G + 4M映射了页目录
   uint32_t *page_dir_addr = (uint32_t*)MAP_PAGE_TABLE_PG_DIR;
-  //kprintf("find_page_table debug>>>:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
 
-  //asm("invlpg (%0)" : :  "r"(page_dir_addr));
   // 高10位存放的是dir offset
   uint32_t page_dir_offset = address >> 22;
   // 中间的10位存放的是page_table offset
   uint32_t page_table_offset = (address >> 12) & 0x3FF;
-  //kprintf("find_page_table:%x %x\n", MAP_PAGE_TABLE_PG_DIR, page_dir_addr);
-  //kprintf("find_page_table: %d %d %x\n", page_dir_offset, page_table_offset, address);
-  /*
-  open_debug = false;
-  if (open_debug) {
-    kprintf("debug>>%x %x\n", esp(), cr3());
-    uint32_t pp = cr3();
-    kprintf("debug>>>:%x %x\n", pp, cr3());
-    asm volatile(
-      "movl %cr0, %eax;"
-      "and $~(1 << 31), %eax;"
-      "movl %eax, %cr0;"
-    );
-
-    asm volatile("movl %%eax, %%esp" :: "a"(0x400000));
-    kprintf("close_mm_page:%x\n", pp);
-    kprintf("pde entry>>>%x %x %x %x %x\n",pp, pp[0], pp[1], pp[512],pp[513]);
-    ppp = pp[513] - 0x3;
-    kprintf("entry>>>>%x %x\n", ppp, ppp[0]);
-    hang();
-  }
-  */
-  //kprintf("find_page_table:debug1\n");
   uint32_t page_table_base = page_dir_addr[page_dir_offset];
-  //kprintf("find_page_table:debug2:%x\n", page_table_base);
   // 注意这里的page_table_base非0的话也是物理地址，不能直接使用
   if (page_table_base == 0) {
     void *new_phy_page = alloc_page(1, 1, 0, 0);
     page_dir_addr[page_dir_offset] = (uint32_t)new_phy_page | 3;
+	LOGD("page_table_base need mapping phy page: pg_dir_offset:%d pg_table_offset:%d phy_addr:%x\n", page_dir_offset, page_table_offset, new_phy_page);
   }
-  uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * (page_dir_offset * 1024 + page_table_offset));
-  //kprintf("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir_addr[page_dir_offset], page_table_base, page_table);
+  uint32_t *page_table = (uint32_t*)(MAP_PAGE_TABLE_START + 4 * 1024 * page_dir_offset + 4 * page_table_offset);
+  LOGD("--find_page_table:%d %d %x %x %x\n", page_dir_offset, page_table_offset, page_dir_addr[page_dir_offset], page_table_base, page_table);
   return page_table;
 }
 
@@ -268,8 +243,7 @@ void map_pte(uint32_t addr)
   // to find page table
   uint32_t *page_table = find_page_table(addr);
   if (*page_table != 0x0) {
-    kprintf("--page_table is not empty:%x %x\n", *page_table, addr);
-    return;
+    LOGW("--page_table is not empty:%x %x %x\n", page_table,*page_table, addr);
   }
   void *phy_page = alloc_page(1, 1, 0, 0);
   if (phy_page == NULL) {
@@ -277,7 +251,6 @@ void map_pte(uint32_t addr)
     return;
   }
   *page_table = (uint32_t)phy_page | 3;
-  //kprintf("--map_pte succ %x %x\n", addr, phy_page);
 }
 
 // 处理缺页中断
@@ -285,7 +258,7 @@ void page_fault_handler(registers_t *r)
 {
   uint32_t faulting_address;
   asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
-  //kprintf("--page fault %x!\n", faulting_address);
+  LOGD("--page fault %x!\n", faulting_address);
 
   // page not present?
   int present = r->err_code & 0x1;

@@ -1,12 +1,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "mm/alloc.h"
+#include "libc/kprint.h"
 
 const uint32_t heap_start_addr = 20 * 1024 * 1024;
 uint32_t heap_curr_addr = heap_start_addr;
 
 void *alloc_mm(int size)
 {
+  LOGD("alloc_mm:%d\n", size);
   // find fit
   uint32_t addr = heap_start_addr;
   void *alloc_addr = NULL;
@@ -30,12 +32,13 @@ void *alloc_mm(int size)
   mm->prev_ = find_mm;
   alloc_addr = (void*)(heap_curr_addr + sizeof(mm_desc));
   heap_curr_addr += sizeof(mm_desc) + size;
-  //kprintf("alloc_mm:%x %d %x\n", alloc_addr, size, find_mm);
+  LOGD("alloc_mm:%x %d %d %x\n", alloc_addr, size, heap_curr_addr, mm);
   return alloc_addr;
 }
 
 void* alloc_mm_align(int size)
 {
+  LOGD("alloc_mm_align:%d\n", size);
   if (size % ALIGN_MEM_SIZE != 0) {
     size = (size / ALIGN_MEM_SIZE + 1) * ALIGN_MEM_SIZE;
   }
@@ -68,13 +71,13 @@ void* alloc_mm_align(int size)
 	find_mm->len_ += padding_size;
     heap_curr_addr += padding_size;
   }
-
   mm_desc *mm = (mm_desc*)heap_curr_addr;
   mm->free_ = false;
   mm->len_ = size;
   mm->prev_ = find_mm;
   alloc_addr = (void*)(heap_curr_addr + sizeof(mm_desc));
   heap_curr_addr += sizeof(mm_desc) + size;
+  LOGD("alloc_mm_align:%x %d %d %x\n", alloc_addr, size, heap_curr_addr, mm);
   return alloc_addr;
 }
 

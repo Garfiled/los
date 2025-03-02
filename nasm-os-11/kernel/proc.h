@@ -37,6 +37,7 @@ struct context {
   unsigned int ebx;
   unsigned int ebp;
   unsigned int eip;
+  unsigned int esp;
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
@@ -47,11 +48,11 @@ struct proc {
   enum procstate state;        // Process state
   uint32_t pgdir;              // Page table
   uint32_t stack;              // Bottom of stack for this process
-  //struct context *context;     // swtch() here to run process
   int killed;                  // If non-zero, have been killed
   char name[16];               // Process name (debugging)
   uint32_t entry;
-  uint32_t stack_store;
+  struct context context;     //
+  int time_quantum;        // 时间片计数器
 };
 
 static inline unsigned int readeflags(void)
@@ -60,6 +61,12 @@ static inline unsigned int readeflags(void)
   asm volatile("pushfl; popl %0" : "=r" (eflags));
   return eflags;
 }
+
+extern struct proc *current_proc;
+
+#define TIME_QUANTUM 100  // 每个进程的时间片长度（tick数）
+
+void schedule();
 
 struct proc* alloc_proc(void *entry_func);
 void test_proc();

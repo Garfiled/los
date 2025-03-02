@@ -13,11 +13,11 @@
 #define MAP_PAGE_TABLE_PG_DIR (uint32_t)(0xFFFFF000)
 // 4G - 8M
 #define MAP_PAGE_TABLE_UNUSE MAP_PAGE_TABLE_START - PDE_SIZE
-#define MAP_STACK_ADDR 0x40000000
+// 3G
+#define MAP_STACK_ADDR 0xC0000000
 
 #define MAP_PDE_IDX 1023
-#define MAP_PG_DIR_PDE_IDX 513
-#define MAP_STACK_PDE_IDX 256
+#define MAP_STACK_PDE_IDX 768
 
 #define PTE_P           0x001   // Present
 #define PTE_W           0x002   // Writeable

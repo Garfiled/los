@@ -24,7 +24,9 @@ struct HD hd[HD_NUM];
 
 void kernel_main()
 {
-  kprintf("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
+  default_log_level = INFO;
+
+  LOGI("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
   isr_install();
   irq_install();
 
@@ -54,11 +56,11 @@ void kernel_main()
   // 初始化文件系统
   init_file_system();
 
-  kprintf("create hello process>>>\n");
+  LOGI("create hello process>>>\n");
   process_exec("hello", 0, NULL);
 
-  kprintf("start schedule process>>>\n");
-  scheduler();
+  LOGI("start schedule process>>>\n");
+  schedule();
 }
 
 void* hd_setup(char* addr)
@@ -237,7 +239,7 @@ void mpenter()
   open_mm_page();
 
   cc->started = 1;
-  scheduler();
+  schedule();
 }
 
 // boot page table
@@ -249,7 +251,7 @@ uint32_t entry_pg_table[1024];
 
 void init_entry_page()
 {
-  kprintf("entry_pg: %x %x\n", entry_pg_dir, entry_pg_table);
+  LOGI("entry_pg: %x %x\n", entry_pg_dir, entry_pg_table);
   MEMSET(entry_pg_dir, 0 , 4096);
   MEMSET(entry_pg_table, 0 , 4096);
   entry_pg_dir[0] = (uint32_t)entry_pg_table | 3;

@@ -1,7 +1,11 @@
+#include "libc/kprint.h"
 #include "libc/string.h"
 #include "drivers/screen.h"
 #include "cpu/ports.h"
 #include <stdarg.h>
+
+
+enum LOG_LEVEL default_log_level = DEBUG;
 
 void serial_putc(char c)
 {

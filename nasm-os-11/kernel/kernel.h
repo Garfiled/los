@@ -20,5 +20,3 @@ void startothers();
 void mpenter();
 void init_entry_page();
 void init_entry_page2();
-void scheduler();
-

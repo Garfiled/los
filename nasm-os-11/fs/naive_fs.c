@@ -29,7 +29,7 @@ static naive_file_meta_t* find_file_meta(const char* filename)
 
 static int32_t naive_fs_stat_file(const char* filename, file_stat_t* stat)
 {
-  kprintf("naive_fs_stat_file: %x %s\n", file_num, filename);
+  LOGD("naive_fs_stat_file: %x %s\n", file_num, filename);
   naive_file_meta_t* file_meta = find_file_meta(filename);
   if (file_meta != NULL) {
 	stat->size = file_meta->size;
@@ -83,7 +83,7 @@ static int32_t naive_fs_write_data(const char* filename, char* buf, uint32_t off
 
 void init_naive_fs()
 {
-  kprintf("init_naive_fs\n");
+  LOGI("init_naive_fs\n");
   naive_fs.type = NAIVE;
   // second device 0KB
   naive_fs.partition.offset = 0;
@@ -94,7 +94,7 @@ void init_naive_fs()
   naive_fs.list_dir = naive_fs_list_dir;
 
   read_hd(false, (char*)&file_num, 0 + naive_fs.partition.offset, sizeof(uint32_t));
-  kprintf("file_num:%d %x\n", file_num, file_num);
+  LOGI("file_num:%d %x\n", file_num, file_num);
   // 不知道这里为什么需要reset HD controller, 否则读取出来的值都是0
   reset_hd_controller();
 
@@ -104,7 +104,7 @@ void init_naive_fs()
   read_hd(false, (char*)file_metas, sizeof(uint32_t) + naive_fs.partition.offset, meta_size);
   for (uint32_t i = 0; i < file_num; i++) {
     naive_file_meta_t* meta = file_metas + i;
-    kprintf("file name=%s offset=%d size=%d\n", meta->filename, meta->offset, meta->size);
+    LOGI("file name=%s offset=%d size=%d\n", meta->filename, meta->offset, meta->size);
   }
 }
 
