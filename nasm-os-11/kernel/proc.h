@@ -32,12 +32,15 @@ extern struct cpu* mycpu(void);
 // at the "Switch stacks" comment. Switch doesn't save eip explicitly,
 // but it is on the stack and allocproc() manipulates it.
 struct context {
+  unsigned int eax;
+  unsigned int ebx;
+  unsigned int ecx;
+  unsigned int edx;
   unsigned int edi;
   unsigned int esi;
-  unsigned int ebx;
   unsigned int ebp;
-  unsigned int eip;
   unsigned int esp;
+  unsigned int eip;
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
@@ -52,7 +55,7 @@ struct proc {
   char name[16];               // Process name (debugging)
   uint32_t entry;
   struct context context;     //
-  int time_quantum;        // 时间片计数器
+  int priority;               // 进程优先级
 };
 
 static inline unsigned int readeflags(void)
@@ -75,7 +78,9 @@ int exec(char *path, int argc, char *argv[]);
 #ifdef __cplusplus
 extern "C" {
 #endif
-void swtch(uint32_t param1, uint32_t param2);
+void switch_context(struct context *, struct context *);
 #ifdef __cplusplus
 }
 #endif
+
+void exit(int status);

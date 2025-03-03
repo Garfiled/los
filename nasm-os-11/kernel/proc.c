@@ -58,9 +58,11 @@ found:
     kprintf("failed to alloc_pte_for_proc\n");
     return NULL;
   }
-  p->stack = MAP_STACK_ADDR + 3 * 1024;
+  p->stack = MAP_STACK_ADDR + 4 * 1024;
   p->entry = (uint32_t)(entry_func);
   p->context.eip = p->entry;
+  p->context.esp = p->stack;
+  p->context.ebp = p->stack;
   //MEMSET(p->context, 0, sizeof *p->context);
   p->killed = 0;
   p->state = RUNNABLE;
@@ -69,7 +71,7 @@ found:
 
 void release_proc(struct proc* p)
 {
-  LOGI("release_proc:%d\n", p->pid);
+  LOGI("release_proc pid:%d proc:%x\n", p->pid, p);
   p->state = ZOMBIE;
   p->pid = 0;
   p->stack = 0;
@@ -88,29 +90,43 @@ void test_proc()
 
 void schedule(void)
 {
-  for(;;) {
-	struct proc* candi_p = NULL;
-	int candi_score = 0;
-    for(struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state == RUNNABLE) {
-	    if (candi_p == NULL || candi_p->time_quantum < candi_score) {
-		  candi_p = p;
-		  candi_score = candi_p->time_quantum;
-		}
-	  }
-	}
-	if (candi_p == NULL) {
+  LOGI("schedule\n");
+  struct proc* candi_p = NULL;
+  int candi_priority = 0;
+  for(struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == RUNNABLE) {
+      if (candi_p == NULL || p->priority > candi_priority) {
+  	    candi_p = p;
+  	    candi_priority = candi_p->priority;
+  	  }
+    } else if (p->state == ZOMBIE) {
+	  release_proc(p);
 	  current_proc = NULL;
-	} else if (current_proc != candi_p) {
-      candi_p->state = RUNNING;
-	  candi_p->time_quantum = TIME_QUANTUM;
+	}
+  }
+  if (candi_p) {
+    LOGI("schedule candi_p:%x pid:%d\n", candi_p, candi_p->pid);
+    if (current_proc == NULL) {
+      current_proc = candi_p;
       set_cr3(candi_p->pgdir);
+      __asm__ volatile(
+        "mov %0, %%esp"
+        : : "r"(candi_p->context.esp)
+      );
+      __asm__ volatile(
+        "call %0"
+        : : "r"(candi_p->context.eip)
+      );
+	} else if (current_proc == candi_p) {
+      candi_p->state = RUNNING;
+      candi_p->priority = TIME_QUANTUM;
+	} else {
+      candi_p->state = RUNNING;
+      candi_p->priority = TIME_QUANTUM;
+	  struct proc* last_p = current_proc;
 	  current_proc = candi_p;
-	  // 上下文切换
-	  swtch(candi_p->stack, candi_p->context.eip);
-      // 当切换回来时恢复原页表
-      set_cr3((uint32_t)(entry_pg_dir));
-	  release_proc(candi_p);
+      set_cr3(candi_p->pgdir);
+	  switch_context(&last_p->context, &candi_p->context);
 	}
   }
 }
@@ -160,4 +176,9 @@ int exec(char *path, int argc, char *argv[])
   asm volatile("call %edx");
   free_mm(read_buffer);
   return 0;
+}
+
+void exit(int status)
+{
+  UNUSED(status);
 }

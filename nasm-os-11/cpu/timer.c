@@ -11,19 +11,21 @@ static void timer_callback(registers_t *regs)
 {
   __atomic_fetch_add(&tick, 1, __ATOMIC_SEQ_CST);
   if (tick % 1000 == 0) {
-    LOGD("timer_callback tick... %d %x %x\n", tick, current_proc, &current_proc);
+    LOGI("timer_callback tick... %d %x %x\n", tick, current_proc, &current_proc);
   }
-  return;
-  if (current_proc != NULL) {
-    LOGD("time_cb pid:%d proc:%x time_quantum:%d\n",current_proc->pid, current_proc, current_proc->time_quantum);
+  if (current_proc != NULL && current_proc->state != ZOMBIE && current_proc->state != UNUSED) {
+    LOGD("time_cb pid:%d proc:%x priority:%d\n",current_proc->pid, current_proc, current_proc->priority);
     // 保存被中断进程的上下文
-    if(--current_proc->time_quantum <= 0) {
-      current_proc->context.eip = regs->eip;
-      current_proc->context.esp = regs->esp;
-      current_proc->context.ebp = regs->ebp;
+    if(--current_proc->priority <= 0) {
+      current_proc->context.eax = regs->eax;
       current_proc->context.ebx = regs->ebx;
-      current_proc->context.esi = regs->esi;
+      current_proc->context.ecx = regs->ecx;
+      current_proc->context.edx = regs->edx;
       current_proc->context.edi = regs->edi;
+      current_proc->context.esi = regs->esi;
+      current_proc->context.ebp = regs->ebp;
+      current_proc->context.esp = regs->esp;
+      current_proc->context.eip = regs->eip;
        // 更新时间片
       current_proc->state = RUNNABLE;
       schedule(); // 触发调度
