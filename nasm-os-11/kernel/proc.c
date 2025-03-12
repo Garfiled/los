@@ -5,6 +5,7 @@
 #include "kernel/proc.h"
 #include "kernel/page.h"
 #include "kernel/kernel.h"
+#include "libc/string.h"
 #include "kernel/elf.h"
 #include "kernel/lapic.h"
 #include "fs/vfs.h"
@@ -14,7 +15,7 @@ struct {
 } ptable;
 
 struct proc *current_proc = NULL;
-int nextpid = 1;
+uint32_t nextpid = 1;
 
 // Must be called with interrupts disabled to avoid the caller being
 // rescheduled between reading lapicid and running through the loop.
@@ -47,25 +48,28 @@ struct proc* alloc_proc(void *entry_func)
     if(p->state == UNUSED)
       goto found;
 
+  LOGE("alloc_proc slot full!\n");
   return NULL;
 
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   // pg dir
-  p->pgdir = (uint32_t)alloc_pte_for_proc();
+  p->pgdir = (uint32_t)alloc_pte_for_proc(p->pid);
   if (p->pgdir == 0) {
-    kprintf("failed to alloc_pte_for_proc\n");
+    LOGE("failed to alloc_pte_for_proc\n");
     return NULL;
   }
   p->stack = MAP_STACK_ADDR + 4 * 1024;
   p->entry = (uint32_t)(entry_func);
+  memset((char*)&p->context, 0, sizeof(p->context));
   p->context.eip = p->entry;
   p->context.esp = p->stack;
   p->context.ebp = p->stack;
-  //MEMSET(p->context, 0, sizeof *p->context);
   p->killed = 0;
+  p->priority = TIME_QUANTUM;
   p->state = RUNNABLE;
+  LOGI("alloc_proc proc:%x pid:%d entry:%x\n", p, p->pid, entry_func);
   return p;
 }
 
@@ -90,43 +94,60 @@ void test_proc()
 
 void schedule(void)
 {
-  LOGI("schedule\n");
   struct proc* candi_p = NULL;
-  int candi_priority = 0;
   for(struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == RUNNABLE) {
-      if (candi_p == NULL || p->priority > candi_priority) {
+      if (candi_p == NULL) {
   	    candi_p = p;
-  	    candi_priority = candi_p->priority;
-  	  }
+	  } else if (p->priority > candi_p->priority) {
+  	    candi_p = p;
+  	  } else if (p->priority == candi_p->priority && candi_p == current_proc && p != current_proc) {
+		candi_p = p;
+	  }
     } else if (p->state == ZOMBIE) {
 	  release_proc(p);
 	  current_proc = NULL;
 	}
   }
   if (candi_p) {
-    LOGI("schedule candi_p:%x pid:%d\n", candi_p, candi_p->pid);
-    if (current_proc == NULL) {
-      current_proc = candi_p;
-      set_cr3(candi_p->pgdir);
+    LOGD("schedule find candi_p:%x pid:%d priority:%d eip:%x esp:%x curr_p:%x curr_esp:%x\n", candi_p, candi_p->pid, candi_p->priority,
+		  candi_p->context.eip, candi_p->context.esp, current_proc, esp());
+  } else {
+	LOGD("schedule empty RUNNABLE proc\n");
+  }
+  struct proc* last_p = current_proc;
+  if (candi_p) {
+    candi_p->state = RUNNING;
+    candi_p->priority = TIME_QUANTUM;
+    current_proc = candi_p;
+    if (last_p == NULL) {
+      set_cr3(current_proc->pgdir);
       __asm__ volatile(
-        "mov %0, %%esp"
-        : : "r"(candi_p->context.esp)
+        "mov %0, %%esp\n\t"
+        "mov %1, %%ebp\n\t"
+        "call %2\n\t"
+		"call %3"
+        : : "r"(current_proc->context.esp),
+		    "r"(current_proc->context.ebp),
+		    "r"(current_proc->context.eip),
+			"r"(exit)
       );
-      __asm__ volatile(
-        "call %0"
-        : : "r"(candi_p->context.eip)
-      );
-	} else if (current_proc == candi_p) {
-      candi_p->state = RUNNING;
-      candi_p->priority = TIME_QUANTUM;
+	} else if (current_proc == last_p) {
 	} else {
-      candi_p->state = RUNNING;
-      candi_p->priority = TIME_QUANTUM;
-	  struct proc* last_p = current_proc;
-	  current_proc = candi_p;
-      set_cr3(candi_p->pgdir);
-	  switch_context(&last_p->context, &candi_p->context);
+      __asm__ volatile(
+	    "sti\n\t"
+		"mov %0, %%cr3\n\t"
+        "mov %1, %%esp\n\t"
+        "mov %2, %%ebp\n\t"
+		"call %3\n\t"
+		"call %4"
+        : : "r"(current_proc->pgdir),
+		    "r"(current_proc->context.esp),
+		    "r"(current_proc->context.ebp),
+		    "r"(current_proc->context.eip),
+			"r"(exit)
+      );
+	  //switch_context(&last_p->context, &current_proc->context);
 	}
   }
 }
@@ -181,4 +202,6 @@ int exec(char *path, int argc, char *argv[])
 void exit(int status)
 {
   UNUSED(status);
+  current_proc->state = ZOMBIE;
+  schedule();
 }

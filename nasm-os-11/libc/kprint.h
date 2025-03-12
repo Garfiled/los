@@ -11,6 +11,9 @@ enum LOG_LEVEL
 extern enum LOG_LEVEL default_log_level;
 
 int kprintf(const char *fmt, ...);
+void putchar(char);
+int puts(const char *str);
+
 #define LOGD(format, ...) {if (DEBUG >= default_log_level) { kprintf("[DEBUG] [%s:%d] " format,__FILE_NAME__,__LINE__,##__VA_ARGS__);}}
 #define LOGI(format, ...) {if (INFO >= default_log_level) { kprintf("[INFO] [%s:%d] " format,__FILE_NAME__,__LINE__,##__VA_ARGS__);}}
 #define LOGW(format, ...) {if (WARN >= default_log_level) { kprintf("[WARN] [%s:%d] " format,__FILE_NAME__,__LINE__,##__VA_ARGS__);}}

@@ -35,7 +35,7 @@ int puts(const char *str)
 int kprintf(const char *fmt, ...)
 {
 	//显示数字缓冲区
-	char buff[0x800];
+	char buff[0x100];
 	//显示字符串指针
 	char *str;
 	//显示字符变量

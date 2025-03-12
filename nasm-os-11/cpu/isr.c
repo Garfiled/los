@@ -134,11 +134,7 @@ void register_interrupt_handler(uint8_t n, isr_t handler)
 
 void irq_handler(registers_t *r)
 {
-    // 不知道为啥这里是-128???
   r->int_no = (uint8_t)r->int_no;
-  //if (r->int_no != 32) {
-  //  kprintf("irq received interrupt: %d %d\n", r->int_no, interrupt_handlers[r->int_no]==0);
-  //}
   /* After every interrupt we need to send an EOI to the PICs
    * or they will not send another interrupt again */
   if (r->int_no >= 40) port_byte_out(0xA0, 0x20); /* slave */

@@ -1,4 +1,4 @@
-[org 0x7c00]
+[org 0x7c00] ;BIOS加载引导扇区的标准地址
 [bits 16]
 KERNEL_OFFSET equ 0x10000 ; The same one we used when linking the kernel
 SETUP equ 0x7e00  ;SETUP addr

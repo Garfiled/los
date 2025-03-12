@@ -1,17 +1,16 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "drivers/screen.h"
-#include "drivers/hd.h"
+#include "kernel/kernel.h"
 #include "libc/kprint.h"
 #include "kernel/page.h"
 #include "cpu/x86.h"
 #include "libc/string.h"
 #include "kernel/proc.h"
 
-void* alloc_pte_for_proc()
+void* alloc_pte_for_proc(uint32_t pid)
 {
-  LOGD("alloc_pte_for_proc start\n");
-  void *phy_addr = alloc_page(1, 4, 0, 0);
+  LOGD("alloc_pte_for_proc start pid:%d\n", pid);
+  void *phy_addr = alloc_page(pid, 4, 0, 0);
   if (phy_addr == NULL) {
 	LOGE("failed to alloc phy page!\n");
     return NULL;
@@ -30,10 +29,11 @@ void* alloc_pte_for_proc()
   // 找到当前未做映射的page_table， TODO 处理并发问题
   if (*page_table != 0) {
     // 已被占用
-	LOGW("page_table is not null\n");
+	LOGE("page_table is not null\n");
     return NULL;
   }
 
+  asm("invlpg (%0)" : :  "r"(map_address)); // invalid TLB entry
   // 设置页目录
   *page_table = pg_dir_phy_addr | 3;
   MEMSET(map_address, 0 , 4096);
@@ -59,9 +59,9 @@ void* alloc_pte_for_proc()
   asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = stack_phy_addr | 3;
   MEMSET(map_address, 0 , 4096);
-  uint32_t* stack_top = (uint32_t*)map_address;
-  *(--stack_top) = 0;                 // exit函数的参数（status=0）
-  *(--stack_top) = (uint32_t)exit;    // 返回地址
+  //uint32_t* stack_top = (uint32_t*)map_address;
+  //*(--stack_top) = 0;                 // exit函数的参数（status=0）
+  //*(--stack_top) = (uint32_t)exit;    // 返回地址
 
   // 设置回去
   asm("invlpg (%0)" : :  "r"(map_address));
@@ -74,6 +74,7 @@ void* alloc_pte_for_proc()
 
 void free_pte_for_proc(uint32_t phy_addr)
 {
+  LOGI("free_pte_for_proc:%x\n", phy_addr);
   uint32_t can_map_address = MAP_PAGE_TABLE_UNUSE;
   uint32_t* map_address = (uint32_t*)can_map_address;
 
@@ -81,6 +82,7 @@ void free_pte_for_proc(uint32_t phy_addr)
   // 找到当前未做映射的page_table， TODO 处理并发问题
   if (*page_table != 0) {
     // 已被占用
+	LOGE("page_table is not null\n");
     return;
   }
   for (int i=1; i < 1024; i++) {
@@ -95,9 +97,10 @@ void free_pte_for_proc(uint32_t phy_addr)
     for (int j=0; j < 1024; j++) {
       uint32_t pte_addr = map_address[j];
       if (pte_addr > 0) {
-         free_page((void*)(pte_addr & (~0x3)), 1);
+        free_page((void*)(pte_addr & (~0x3)), 1);
       }
     }
+    free_page((void*)(pde_addr & (~0x3)), 1);
   }
   asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = 0;
@@ -194,7 +197,7 @@ void* alloc_page(uint32_t process_id, uint32_t count, uint32_t can_swap, uint32_
     mmap[start_with + i] = MM_USED | MM_CAN_SWAP; //(MM_USED | ((uint32_t) can_swap << 1) | ((uint32_t) is_dynamic << 2));
     map_process[start_with + i] = process_id;
   }
-  LOGD("alloc_phy_page: addr=%x count=%d\n", ret, count);
+  LOGD("alloc_phy_page: pid=%d addr=%x count=%d\n",process_id, ret, count);
   //返回查找到内存地址
   return ret;
 }
@@ -210,9 +213,10 @@ void free_page(void *addr, uint32_t count)
   //释放内存页
   for (uint32_t i = 0; i < count; i++) {
     //更新map中这些页的状态
-    mmap[(uint32_t)addr + (i * PAGE_ALIGN_SIZE) / PAGE_ALIGN_SIZE] = (MM_FREE | MM_CAN_SWAP | MM_NO_DYNAMIC);
+    mmap[(uint32_t)addr / PAGE_ALIGN_SIZE + i * 4] = (MM_FREE | MM_CAN_SWAP | MM_NO_DYNAMIC);
     map_process[i] = 0;
   }
+  LOGD("free_phy_page %x %d\n", addr, count);
 }
 
 void free_page_by_pid(uint32_t pid)
@@ -236,7 +240,11 @@ uint32_t *find_page_table(uint32_t address)
   uint32_t page_table_base = page_dir_addr[page_dir_offset];
   // 注意这里的page_table_base非0的话也是物理地址，不能直接使用
   if (page_table_base == 0) {
-    void *new_phy_page = alloc_page(1, 1, 0, 0);
+	uint32_t pid = 0;
+	if (current_proc != NULL) {
+	  pid = current_proc->pid;
+	}
+    void *new_phy_page = alloc_page(pid, 1, 0, 0);
     page_dir_addr[page_dir_offset] = (uint32_t)new_phy_page | 3;
 	LOGD("page_table_base need mapping phy page: pg_dir_offset:%d pg_table_offset:%d phy_addr:%x\n", page_dir_offset, page_table_offset, new_phy_page);
   }
@@ -253,7 +261,11 @@ void map_pte(uint32_t addr)
   if (*page_table != 0x0) {
     LOGW("--page_table is not empty:%x %x %x\n", page_table,*page_table, addr);
   }
-  void *phy_page = alloc_page(1, 1, 0, 0);
+  uint32_t pid = 0;
+  if (current_proc != NULL) {
+	pid = current_proc->pid;
+  }
+  void *phy_page = alloc_page(pid, 1, 0, 0);
   if (phy_page == NULL) {
     kprintf("--alloc_page fail %x\n", addr);
     return;
@@ -266,7 +278,8 @@ void page_fault_handler(registers_t *r)
 {
   uint32_t faulting_address;
   asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
-  LOGD("--page fault %x!\n", faulting_address);
+  LOGD("--page fault at %x eip:%x esp:%x!\n", faulting_address,
+		  r->eip, r->esp);
 
   // page not present?
   int present = r->err_code & 0x1;

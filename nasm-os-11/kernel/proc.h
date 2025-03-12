@@ -41,13 +41,15 @@ struct context {
   unsigned int ebp;
   unsigned int esp;
   unsigned int eip;
+  unsigned int eflags;
+  unsigned int cs;
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
-  int pid;                     // Process ID
+  uint32_t pid;                     // Process ID
   enum procstate state;        // Process state
   uint32_t pgdir;              // Page table
   uint32_t stack;              // Bottom of stack for this process

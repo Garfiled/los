@@ -40,9 +40,9 @@ static inline void hang()
   }
 }
 
-static inline void set_cr3(uint32_t cr3)
+static inline void set_cr3(uint32_t val)
 {
-  asm volatile("movl %%eax, %%cr3" :: "a"(cr3));
+  asm volatile("mov %0, %%cr3" : : "r"(val) : "memory");
 }
 
 static inline uint32_t cr3()

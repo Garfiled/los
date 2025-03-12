@@ -13,7 +13,8 @@ CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32 -I./
 IFLAGS=-I${SRC_DIR}
 
 os-image.bin: boot/bootsect.bin boot/entryother.bin kernel.bin
-	cat $^ > os-image.bin
+	cat $^ > os-image.bin.bin
+	cp os-image.bin.bin os-image.bin
 	dd if=/dev/zero of=./os-image.bin.tmp bs=64k count=1
 	cat os-image.bin.tmp >> os-image.bin
 	head -c65536 os-image.bin > os-image.bin.tmp

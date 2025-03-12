@@ -4,7 +4,7 @@
 
 extern uint32_t tick;
 extern uint32_t entry_pg_dir[];
-extern uint32_t entry_pg_dir2[];
+extern uint32_t entry_pg_table[];
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,4 +19,3 @@ void user_input(char *input);
 void startothers();
 void mpenter();
 void init_entry_page();
-void init_entry_page2();

@@ -13,9 +13,11 @@ void syscall_handler(registers_t *r)
   LOGI("syscall_handler: %d %d %d %d\n", r->eax, r->ebx, r->ecx, r->edx);
   if (r->eax == 4) {
 	if (r->ebx == 1) {
+	  // output to stdout
       kprint_k((char*)r->ecx, r->edx);
     }
   } else if (r->eax == 1) {
+	// exit
     current_proc->state = ZOMBIE;
 	schedule();
   }
