@@ -68,16 +68,16 @@ void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
     {
     	//数据缓冲区
     	void *buf2 = buf;
-    
+
     	//计算扇区号
     	uint8_t lba0 = (uint8_t) (lba & 0xff);
     	uint8_t lba1 = (uint8_t) (lba >> 8 & 0xff);
     	uint8_t lba2 = (uint8_t) (lba >> 16 & 0xff);
     	uint8_t lba3 = (uint8_t) (lba >> 24 & 0xf);
-    
+
     	//IDE0主设备
     	lba3 |= 0xe0; // 1110 0000
-    
+
     	//发送读写命令
     	port_byte_out(HD_PORT_SECT_COUNT,nsects);
     	port_byte_out(HD_PORT_LBA0, lba0);
@@ -85,7 +85,7 @@ void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
     	port_byte_out(HD_PORT_LBA2, lba2);
     	port_byte_out(HD_PORT_LBA3, lba3);
     	port_byte_out(HD_PORT_COMMAND, cmd);
-    
+
     	int32_t check_status_retry = 1000;
     	while (check_status_retry >0 && ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40)) {
     	  check_status_retry--;

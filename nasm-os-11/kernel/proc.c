@@ -121,19 +121,19 @@ void schedule(void)
     candi_p->priority = TIME_QUANTUM;
     current_proc = candi_p;
     if (last_p == NULL) {
-      set_cr3(current_proc->pgdir);
       __asm__ volatile(
-        "mov %0, %%esp\n\t"
-        "mov %1, %%ebp\n\t"
-        "call %2\n\t"
-		"call %3"
-        : : "r"(current_proc->context.esp),
+		"mov %0, %%cr3\n\t"
+        "mov %1, %%esp\n\t"
+        "mov %2, %%ebp\n\t"
+        "call %3\n\t"
+		"call %4"
+        : : "r"(current_proc->pgdir),
+		    "r"(current_proc->context.esp),
 		    "r"(current_proc->context.ebp),
 		    "r"(current_proc->context.eip),
 			"r"(exit)
       );
-	} else if (current_proc == last_p) {
-	} else {
+	} else if (current_proc != last_p) {
       __asm__ volatile(
 	    "sti\n\t"
 		"mov %0, %%cr3\n\t"
@@ -147,7 +147,6 @@ void schedule(void)
 		    "r"(current_proc->context.eip),
 			"r"(exit)
       );
-	  //switch_context(&last_p->context, &current_proc->context);
 	}
   }
 }
@@ -203,5 +202,14 @@ void exit(int status)
 {
   UNUSED(status);
   current_proc->state = ZOMBIE;
-  schedule();
+  __asm__ volatile(
+    "mov %0, %%cr3\n\t"
+    "mov %1, %%esp\n\t"
+    "mov %2, %%ebp\n\t"
+	"jmp %3"
+    : : "r"(entry_pg_dir),
+        "r"(PDE_SIZE),
+        "r"(PDE_SIZE),
+        "r"(schedule)
+  );
 }

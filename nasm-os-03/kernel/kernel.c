@@ -69,8 +69,8 @@ void kernel_main() {
    hd_rw(0, HD_READ, 1, (void*)(0x9200));
 
    // find magic number
-   unsigned char *magic = (unsigned char*)0x9200 + 510;
-	 kprint_k(magic, 2);
+   char *magic = (char*)0x9200 + 510;
+   kprint_k(magic, 2);
    kprint("\n");
    int val = *magic;
    print_int(val);
