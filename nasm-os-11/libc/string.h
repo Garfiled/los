@@ -6,7 +6,7 @@ void int_to_ascii(int n, char *str);
 void _itoa(int n, char *str, int radix);
 void hex_to_ascii(int n, char *str);
 void reverse(char *s);
-int strlen(char *s);
+int strlen(const char *s);
 void backspace(char *s);
 void append(char *s, char c);
 int strcmp(const char *s1, const char *s2);

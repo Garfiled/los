@@ -12,6 +12,20 @@ static inline uint32_t cs()
   return cs;
 }
 
+static inline uint32_t eip()
+{
+  uint32_t eip_val;
+
+  // 通过 CALL-POP 方式获取当前 EIP
+  __asm__ volatile (
+      "call 1f\n\t"       // 调用下一条指令（标签 1）
+      "1:\n\t"            // 定义标签 1
+      "pop %0"            // 将返回地址（即标签1的地址）弹出到变量
+      : "=r" (eip_val)
+  );
+  return eip_val;
+}
+
 static inline uint32_t ebp()
 {
   uint32_t ebp;

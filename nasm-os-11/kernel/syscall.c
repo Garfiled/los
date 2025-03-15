@@ -18,7 +18,6 @@ void syscall_handler(registers_t *r)
     }
   } else if (r->eax == 1) {
 	// exit
-    current_proc->state = ZOMBIE;
-	schedule();
+	exit(0);
   }
 }

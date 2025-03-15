@@ -99,7 +99,7 @@ void init_naive_fs()
   reset_hd_controller();
 
   uint32_t meta_size = file_num * sizeof(naive_file_meta_t);
-  // 如果通过alloc_mm申请的话，其他进程看不到
+  // 如果通过alloc_mm申请的话，其他进程看不到, 这里是加载完放在了全局变量中
   //file_metas = (naive_file_meta_t*)alloc_mm(meta_size);
   read_hd(false, (char*)file_metas, sizeof(uint32_t) + naive_fs.partition.offset, meta_size);
   for (uint32_t i = 0; i < file_num; i++) {

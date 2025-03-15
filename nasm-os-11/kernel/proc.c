@@ -41,7 +41,7 @@ struct cpu* mycpu(void)
   return NULL;
 }
 
-struct proc* alloc_proc(void *entry_func)
+struct proc* alloc_proc(void *entry_func, const char* args)
 {
   struct proc* p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -55,12 +55,12 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   // pg dir
-  p->pgdir = (uint32_t)alloc_pte_for_proc(p->pid);
+  p->pgdir = (uint32_t)alloc_pte_for_proc(p->pid, args);
   if (p->pgdir == 0) {
     LOGE("failed to alloc_pte_for_proc\n");
     return NULL;
   }
-  p->stack = MAP_STACK_ADDR + 4 * 1024;
+  p->stack = MAP_STACK_ADDR - 2048; // 3G - 2KB
   p->entry = (uint32_t)(entry_func);
   memset((char*)&p->context, 0, sizeof(p->context));
   p->context.eip = p->entry;
@@ -75,12 +75,14 @@ found:
 
 void release_proc(struct proc* p)
 {
-  LOGI("release_proc pid:%d proc:%x\n", p->pid, p);
+  LOGI("release_proc pid:%d proc:%x esp:%x\n", p->pid, p, esp());
   p->state = ZOMBIE;
   p->pid = 0;
   p->stack = 0;
   p->entry = 0;
   p->killed = 0;
+  p->priority = 0;
+  p->entry = 0;
 
   free_pte_for_proc(p->pgdir);
   p->state = UNUSED;
@@ -113,7 +115,12 @@ void schedule(void)
     LOGD("schedule find candi_p:%x pid:%d priority:%d eip:%x esp:%x curr_p:%x curr_esp:%x\n", candi_p, candi_p->pid, candi_p->priority,
 		  candi_p->context.eip, candi_p->context.esp, current_proc, esp());
   } else {
-	LOGD("schedule empty RUNNABLE proc\n");
+	static int32_t last_tick_time = 0;
+    int32_t curr_tick = tick;
+	if (tick < 1000 || curr_tick - last_tick_time / 1000 * 1000 > 1000) {
+	  LOGD("schedule empty RUNNABLE proc eip:%x esp:%x\n", eip(), esp());
+	  last_tick_time = curr_tick;
+	}
   }
   struct proc* last_p = current_proc;
   if (candi_p) {
@@ -121,11 +128,13 @@ void schedule(void)
     candi_p->priority = TIME_QUANTUM;
     current_proc = candi_p;
     if (last_p == NULL) {
+	  // 调用完怎么再回到这里？
       __asm__ volatile(
+	    "sti\n\t"
 		"mov %0, %%cr3\n\t"
         "mov %1, %%esp\n\t"
         "mov %2, %%ebp\n\t"
-        "call %3\n\t"
+        "jmp %3\n\t"
 		"call %4"
         : : "r"(current_proc->pgdir),
 		    "r"(current_proc->context.esp),
@@ -139,7 +148,7 @@ void schedule(void)
 		"mov %0, %%cr3\n\t"
         "mov %1, %%esp\n\t"
         "mov %2, %%ebp\n\t"
-		"call %3\n\t"
+		"jmp %3\n\t"
 		"call %4"
         : : "r"(current_proc->pgdir),
 		    "r"(current_proc->context.esp),
@@ -151,21 +160,16 @@ void schedule(void)
   }
 }
 
-int process_exec(const char *path, int argc, char *argv[])
+int process_exec(const char* args)
 {
-  // kprintf("process_exec>\n");
-  UNUSED(path);
-  UNUSED(argc);
-  UNUSED(argv);
-  alloc_proc((void*)exec);
+  alloc_proc((void*)exec, args);
   return 0;
 }
 
-int exec(char *path, int argc, char *argv[])
+int exec(const char* args)
 {
-  UNUSED(argc);
-  UNUSED(argv);
-  path = (char*)"hello";
+  UNUSED(args);
+  char* path = (char*)"hello";
 
     // Read elf binary file.
   file_stat_t stat;
@@ -202,14 +206,13 @@ void exit(int status)
 {
   UNUSED(status);
   current_proc->state = ZOMBIE;
+  LOGI("proc exit pid:%d\n", current_proc->pid);
   __asm__ volatile(
     "mov %0, %%cr3\n\t"
     "mov %1, %%esp\n\t"
-    "mov %2, %%ebp\n\t"
-	"jmp %3"
+	"jmp %2"
     : : "r"(entry_pg_dir),
         "r"(PDE_SIZE),
-        "r"(PDE_SIZE),
-        "r"(schedule)
+        "r"(sched_loop)
   );
 }

@@ -24,7 +24,7 @@ struct HD hd[HD_NUM];
 
 void calc()
 {
-  LOGI("calc1 start\n");
+  LOGI("calc1 start eip:%x esp:%x\n", eip(), esp());
   int32_t sum = 0;
   int32_t last_tick = 0;
   for (int32_t i = 0; i < 1000; i++) {
@@ -32,18 +32,17 @@ void calc()
       sum++;
 	  int32_t curr_tick = tick;
 	  if (curr_tick - last_tick/1000 *1000 >= 1000) {
-	    LOGI("calc1:%d %d %d %d %d\n", sum, i, j, curr_tick - last_tick, curr_tick);
+	    LOGI("calc1:%d %d %d %d %d eip:%x esp:%x\n", sum, i, j, curr_tick - last_tick, curr_tick, eip(), esp());
 		last_tick = curr_tick;
 	  }
     }
   }
   LOGI("calc1 end\n");
-  exit(0);
 }
 
 void calc2()
 {
-  LOGI("calc2 start\n");
+  LOGI("calc2 start eip:%x esp:%x\n", eip(), esp());
   int32_t sum = 0;
   int32_t last_tick = 0;
   for (int32_t i = 0; i < 1000; i++) {
@@ -51,20 +50,19 @@ void calc2()
       sum++;
 	  int32_t curr_tick = tick;
 	  if (curr_tick - last_tick/1000 *1000 >= 1000) {
-	    LOGI("calc2:%d %d %d %d %d\n", sum, i, j, curr_tick - last_tick, curr_tick);
+	    LOGI("calc2:%d %d %d %d %d eip:%x esp:%x\n", sum, i, j, curr_tick - last_tick, curr_tick, eip(), esp());
 		last_tick = curr_tick;
 	  }
     }
   }
   LOGI("calc2 end\n");
-  exit(0);
 }
 
 void kernel_main()
 {
   default_log_level = DEBUG;
 
-  LOGI("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
+  LOGI("I am in kernel ebp:%x esp:%x eip:%x\n", ebp(), esp(), eip());
   isr_install();
   irq_install();
 
@@ -87,6 +85,7 @@ void kernel_main()
 
   set_cr3((uint32_t)entry_pg_dir);
 
+  // 启用分页
   open_mm_page();
 
   register_interrupt_handler(14, page_fault_handler);
@@ -94,16 +93,23 @@ void kernel_main()
   // 初始化文件系统
   init_file_system();
 
-  //LOGI("create hello process>>>\n");
-  //process_exec("hello", 0, NULL);
+  LOGI("create hello process>>>\n");
+  process_exec("hello");
 
   LOGI("alloc calc1 proc\n");
-  alloc_proc((void*)calc);
+  alloc_proc((void*)calc, NULL);
   LOGI("alloc calc2 proc\n");
-  alloc_proc((void*)calc2);
+  alloc_proc((void*)calc2, NULL);
 
   LOGI("start schedule process>>>\n");
-  schedule();
+  sched_loop();
+}
+
+void sched_loop()
+{
+  while (true) {
+    schedule();
+  }
 }
 
 void* hd_setup(char* addr)

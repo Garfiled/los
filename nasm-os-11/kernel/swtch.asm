@@ -11,7 +11,7 @@ switch_context:
     mov [eax], esp        ; 保存旧栈指针
     
     ; 加载新上下文
-    mov eax, [esp + 24]   ; new
+    mov eax, [esp + 28]   ; new
     mov esp, [eax]
     
     ; 恢复新上下文

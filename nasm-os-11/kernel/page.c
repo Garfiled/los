@@ -7,7 +7,7 @@
 #include "libc/string.h"
 #include "kernel/proc.h"
 
-void* alloc_pte_for_proc(uint32_t pid)
+void* alloc_pte_for_proc(uint32_t pid, const char* args)
 {
   LOGD("alloc_pte_for_proc start pid:%d\n", pid);
   void *phy_addr = alloc_page(pid, 4, 0, 0);
@@ -38,7 +38,7 @@ void* alloc_pte_for_proc(uint32_t pid)
   *page_table = pg_dir_phy_addr | 3;
   MEMSET(map_address, 0 , 4096);
   map_address[0] = first_pde_phy_addr | 3; // 第一个二级页表
-  map_address[MAP_STACK_PDE_IDX] = stack_pde_phy_addr | 3; // 虚拟地址空间3G处
+  map_address[MAP_STACK_PDE_IDX] = stack_pde_phy_addr | 3; // 虚拟地址空间3G-4MB处
   map_address[MAP_PDE_IDX] = pg_dir_phy_addr | 3;
 
   asm("invlpg (%0)" : :  "r"(map_address)); // invalid TLB entry
@@ -53,15 +53,13 @@ void* alloc_pte_for_proc(uint32_t pid)
   asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = stack_pde_phy_addr | 3;
   MEMSET(map_address, 0 , 4096);
-  map_address[0] = (uint32_t)stack_phy_addr | 3;
+  map_address[1023] = (uint32_t)stack_phy_addr | 3; // 虚拟地址空间3G-4KB处
 
   // 布局栈
   asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = stack_phy_addr | 3;
   MEMSET(map_address, 0 , 4096);
-  //uint32_t* stack_top = (uint32_t*)map_address;
-  //*(--stack_top) = 0;                 // exit函数的参数（status=0）
-  //*(--stack_top) = (uint32_t)exit;    // 返回地址
+  memcpy(map_address + 2048, args, strlen(args)); // args copy to 3G - 4KB + 2KB
 
   // 设置回去
   asm("invlpg (%0)" : :  "r"(map_address));

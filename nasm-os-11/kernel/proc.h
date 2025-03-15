@@ -32,17 +32,13 @@ extern struct cpu* mycpu(void);
 // at the "Switch stacks" comment. Switch doesn't save eip explicitly,
 // but it is on the stack and allocproc() manipulates it.
 struct context {
-  unsigned int eax;
-  unsigned int ebx;
-  unsigned int ecx;
-  unsigned int edx;
   unsigned int edi;
   unsigned int esi;
+  unsigned int ebx;
   unsigned int ebp;
-  unsigned int esp;
-  unsigned int eip;
   unsigned int eflags;
-  unsigned int cs;
+  unsigned int eip;
+  unsigned int esp;
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
@@ -73,10 +69,10 @@ extern struct proc *current_proc;
 
 void schedule();
 
-struct proc* alloc_proc(void *entry_func);
+struct proc* alloc_proc(void *entry_func, const char* args);
 void test_proc();
-int process_exec(const char *path, int argc, char *argv[]);
-int exec(char *path, int argc, char *argv[]);
+int process_exec(const char *args);
+int exec(const char* args);
 #ifdef __cplusplus
 extern "C" {
 #endif

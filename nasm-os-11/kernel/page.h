@@ -18,7 +18,7 @@
 
 #define MAP_UNUSED_IDX 1022
 #define MAP_PDE_IDX 1023
-#define MAP_STACK_PDE_IDX 768
+#define MAP_STACK_PDE_IDX 767
 
 #define PTE_P           0x001   // Present
 #define PTE_W           0x002   // Writeable
@@ -70,7 +70,7 @@ typedef struct isr_params {
   uint32_t eip, cs, eflags, user_esp, user_ss;
 } isr_params_t;
 
-void* alloc_pte_for_proc(uint32_t pid);
+void* alloc_pte_for_proc(uint32_t pid, const char* args);
 void free_pte_for_proc(uint32_t phy_addr);
 void map_pte(uint32_t addr);
 void page_fault_handler(registers_t *r);
