@@ -117,8 +117,8 @@ void schedule(void)
   } else {
 	static int32_t last_tick_time = 0;
     int32_t curr_tick = tick;
-	if (tick < 1000 || curr_tick - last_tick_time / 1000 * 1000 > 1000) {
-	  LOGD("schedule empty RUNNABLE proc eip:%x esp:%x\n", eip(), esp());
+	if (curr_tick - last_tick_time / 1000 * 1000 > 1000) {
+	  LOGD("schedule empty RUNNABLE proc eip:%x esp:%x %d\n", eip(), esp(), tick);
 	  last_tick_time = curr_tick;
 	}
   }
@@ -134,13 +134,11 @@ void schedule(void)
 		"mov %0, %%cr3\n\t"
         "mov %1, %%esp\n\t"
         "mov %2, %%ebp\n\t"
-        "jmp %3\n\t"
-		"call %4"
+        "jmp %3"
         : : "r"(current_proc->pgdir),
 		    "r"(current_proc->context.esp),
 		    "r"(current_proc->context.ebp),
-		    "r"(current_proc->context.eip),
-			"r"(exit)
+		    "r"(current_proc->context.eip)
       );
 	} else if (current_proc != last_p) {
       __asm__ volatile(
@@ -148,13 +146,11 @@ void schedule(void)
 		"mov %0, %%cr3\n\t"
         "mov %1, %%esp\n\t"
         "mov %2, %%ebp\n\t"
-		"jmp %3\n\t"
-		"call %4"
+		"jmp %3"   // 跳转过去执行，执行完还能回到这里
         : : "r"(current_proc->pgdir),
 		    "r"(current_proc->context.esp),
 		    "r"(current_proc->context.ebp),
-		    "r"(current_proc->context.eip),
-			"r"(exit)
+		    "r"(current_proc->context.eip)
       );
 	}
   }

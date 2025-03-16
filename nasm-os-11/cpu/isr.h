@@ -88,8 +88,8 @@ typedef struct {
    uint32_t ds; /* Data segment selector */
    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; /* Pushed by pusha. */
    uint32_t int_no, err_code; /* Interrupt number and error code (if applicable) */
-   uint32_t eip, cs, eflags; /* Pushed by the processor automatically */
-   uint32_t user_esp,user_ss; //发生特权级切换
+   uint32_t eip, cs, eflags; /* CPU自动压入 */
+   uint32_t user_esp,user_ss; //发生特权级切换,CPU自动压入的用户态栈信息
 } registers_t;
 
 void isr_install();

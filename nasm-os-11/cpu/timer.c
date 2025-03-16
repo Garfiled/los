@@ -17,18 +17,19 @@ static void timer_callback(registers_t *regs)
 	//puts("time cb has proc\n");
     // 保存被中断进程的上下文
     if(current_proc->priority <= 0) {
+	  uint32_t esp_before_int = regs->esp + 20;
 	  //puts("time cb need schedule proc\n");
       current_proc->context.ebx = regs->ebx;
       current_proc->context.edi = regs->edi;
       current_proc->context.esi = regs->esi;
       current_proc->context.ebp = regs->ebp;
-      current_proc->context.esp = regs->esp;
+      current_proc->context.esp = esp_before_int; // eflags + cs + eip + status + i_no
       current_proc->context.eip = regs->eip;
       current_proc->context.eflags = regs->eflags;
        // 更新时间片
       current_proc->state = RUNNABLE;
-      LOGD("time_cb need schedule current_proc:%x pid:%d priority:%d reg_ebp:%x reg_eip:%x reg_esp:%x reg_user_esp:%x tick:%d curr_esp:%x\n",current_proc, current_proc->pid,
-			  current_proc->priority, regs->ebp, regs->eip, regs->esp, regs->user_esp,tick, esp());
+      LOGD("time_cb need schedule current_proc:%x pid:%d priority:%d reg_eip:%x esp_before_int:%x tick:%d\n",current_proc, current_proc->pid,
+			  current_proc->priority, regs->eip, esp_before_int, tick);
       schedule(); // 触发调度
     }
   }

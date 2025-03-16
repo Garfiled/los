@@ -59,7 +59,8 @@ void* alloc_pte_for_proc(uint32_t pid, const char* args)
   asm("invlpg (%0)" : :  "r"(map_address));
   *page_table = stack_phy_addr | 3;
   MEMSET(map_address, 0 , 4096);
-  memcpy(map_address + 2048, args, strlen(args)); // args copy to 3G - 4KB + 2KB
+  memcpy(map_address + 2032, args, strlen(args)); // args copy to 3G - 4KB + 2KB
+  map_address[512] = (uint32_t)exit;
 
   // 设置回去
   asm("invlpg (%0)" : :  "r"(map_address));

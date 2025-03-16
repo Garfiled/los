@@ -14,6 +14,7 @@
 #include "kernel/proc.h"
 #include "kernel/lapic.h"
 #include "libc/kprint.h"
+#include "mm/gdt.h"
 
 #define HD_NUM 2
 #define SYSTEM_PARAM_ADDR 0x9000
@@ -76,6 +77,8 @@ void kernel_main()
 
   // phy memory mgr
   install_alloc();
+
+  init_gdt();
 
   // 初始化processor启动过渡页表
   init_entry_page();
