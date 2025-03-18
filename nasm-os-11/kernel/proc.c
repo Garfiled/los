@@ -122,37 +122,21 @@ void schedule(void)
 	  last_tick_time = curr_tick;
 	}
   }
-  struct proc* last_p = current_proc;
   if (candi_p) {
     candi_p->state = RUNNING;
     candi_p->priority = TIME_QUANTUM;
     current_proc = candi_p;
-    if (last_p == NULL) {
-	  // 调用完怎么再回到这里？
-      __asm__ volatile(
-	    "sti\n\t"
-		"mov %0, %%cr3\n\t"
-        "mov %1, %%esp\n\t"
-        "mov %2, %%ebp\n\t"
-        "jmp %3"
+    __asm__ volatile(
+	  "sti\n\t"
+	  "mov %0, %%cr3\n\t"
+      "mov %1, %%esp\n\t"
+      "mov %2, %%ebp\n\t"
+      "jmp %3"
         : : "r"(current_proc->pgdir),
 		    "r"(current_proc->context.esp),
 		    "r"(current_proc->context.ebp),
 		    "r"(current_proc->context.eip)
-      );
-	} else if (current_proc != last_p) {
-      __asm__ volatile(
-	    "sti\n\t"
-		"mov %0, %%cr3\n\t"
-        "mov %1, %%esp\n\t"
-        "mov %2, %%ebp\n\t"
-		"jmp %3"   // 跳转过去执行，执行完还能回到这里
-        : : "r"(current_proc->pgdir),
-		    "r"(current_proc->context.esp),
-		    "r"(current_proc->context.ebp),
-		    "r"(current_proc->context.eip)
-      );
-	}
+			);
   }
 }
 
@@ -164,8 +148,8 @@ int process_exec(const char* args)
 
 int exec(const char* args)
 {
-  UNUSED(args);
-  char* path = (char*)"hello";
+  LOGD("exec args:%s %x\n", args, args);
+  char* path = (char*)args;
 
     // Read elf binary file.
   file_stat_t stat;

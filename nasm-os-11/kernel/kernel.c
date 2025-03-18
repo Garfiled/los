@@ -61,7 +61,7 @@ void calc2()
 
 void kernel_main()
 {
-  default_log_level = DEBUG;
+  default_log_level = INFO;
 
   LOGI("I am in kernel ebp:%x esp:%x eip:%x\n", ebp(), esp(), eip());
   isr_install();
