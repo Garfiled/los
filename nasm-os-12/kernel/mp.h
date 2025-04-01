@@ -24,25 +24,26 @@ struct mpconf {         // configuration table header
   unsigned char version;                // [14]
   unsigned char checksum;               // all bytes must add up to 0
   unsigned char product[20];            // product id
-  unsigned int *oemtable;               // OEM table pointer
+  uint32_t *oemtable;               // OEM table pointer
   unsigned short oemlength;             // OEM table length
   unsigned short entry;                 // entry count
-  unsigned int *lapicaddr;              // address of local APIC
+  uint32_t *lapicaddr;              // address of local APIC
   unsigned short xlength;               // extended table length
   unsigned char xchecksum;              // extended table checksum
   unsigned char reserved;
 } __attribute__((packed));
 
-struct mpproc {         // processor table entry
-  unsigned char type;                   // entry type (0)
-  unsigned char apicid;                 // local APIC id
-  unsigned char version;                // local APIC verison
-  unsigned char flags;                  // CPU flags
-    #define MPBOOT 0x02           // This proc is the bootstrap processor.
-  unsigned char signature[4];           // CPU signature
-  unsigned int feature;                 // feature flags from CPUID instruction
-  unsigned char reserved[8];
+#pragma pack(push, 1) // 禁用结构体对齐优化
+struct mpproc {
+    uint8_t type;            // 0x00: 条目类型 (0x00)
+    uint8_t apic_id;         // 0x01: APIC ID
+    uint8_t apic_version;    // 0x02: APIC 版本
+    uint8_t cpu_flags;       // 0x03: 标志 (0x01=启用, 0x02=BSP)
+    uint32_t cpu_signature;  // 0x04: CPU 签名 (CPUID)
+    uint32_t feature_flags;  // 0x08: 特性标志
+    uint8_t reserved[8];     // 0x0C: 保留字段
 };
+#pragma pack(pop) // 恢复默认对齐
 
 struct mpioapic {       // I/O APIC table entry
   unsigned char type;                   // entry type (2)

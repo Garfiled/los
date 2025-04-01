@@ -15,7 +15,7 @@ extern uint32_t tick;
 char hd_num = 0;
 struct HD hd[HD_NUM];
 
-void* hd_setup(void* addr) 
+void* hd_setup(void* addr)
 {
   kprint("hd_setup\n");
   hd_num = *((char*)addr);
@@ -24,16 +24,15 @@ void* hd_setup(void* addr)
   kprint("\n");
   addr++;
 
-  for (int i=0;i<hd_num;i++)
-  {
+  for (int i=0;i<hd_num;i++) {
     if (i<HD_NUM) {
-    	hd[i].cyl = *((unsigned int*)(addr+4));
-    	hd[i].head = *((unsigned int*)(addr+8));
-    	hd[i].sector = *((unsigned int*)(addr+12));
-    	hd[i].nsectors = *((unsigned long*)(addr+16));
-    	hd[i].sector_bytes = *((unsigned int*)(addr+24));
+ 	  hd[i].cyl = *((unsigned int*)(addr+4));
+      hd[i].head = *((unsigned int*)(addr+8));
+      hd[i].sector = *((unsigned int*)(addr+12));
+      hd[i].nsectors = *((unsigned long*)(addr+16));
+      hd[i].sector_bytes = *((unsigned int*)(addr+24));
     }
-  addr += 30;
+    addr += 30;
   }
   if (hd_num>HD_NUM)
     hd_num = HD_NUM;
@@ -51,7 +50,7 @@ void kernel_main() {
   hd_setup((void*)(SYSTEM_PARAM_ADDR));
 }
 
-void print_hd() 
+void print_hd()
 {
   char hd_id_str[4];
   char cylinders_str[20];
@@ -110,7 +109,7 @@ void read_hd(char s[])
   int start_sector = atoi(&s[2]);
   if (s[0] == '0') {
     hd_rw(true, start_sector, HD_READ, 1, (void*)(0x9200));
-  } else if (s[1] = '1') {
+  } else if (s[1] == '1') {
     hd_rw(false, start_sector, HD_READ, 1, (void*)(0x9200));
   }
 }
@@ -124,7 +123,7 @@ void write_hd(char s[])
   }
   if (s[0] == '0') {
     hd_rw(true, start_sector, HD_WRITE, 1, buf);
-  } else if (s[1] = '1') {
+  } else if (s[1] == '1') {
     hd_rw(false, start_sector, HD_WRITE, 1, buf);
   }
 }
