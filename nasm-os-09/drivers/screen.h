@@ -12,9 +12,9 @@
 
 /* Public kernel API */
 void clear_screen();
-int kprint_at(char *message, int col, int row);
+int kprint_at(const char *message, int col, int row);
 void kprint_k(char *message, int k);
-int kprint(char *message);
+int kprint(const char *message);
 void kprint_backspace();
 void kprint_int(int val);
 void kprint_hex(char *message);

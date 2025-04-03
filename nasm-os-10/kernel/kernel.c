@@ -2,7 +2,6 @@
 #include "drivers/screen.h"
 #include "drivers/hd.h"
 #include "libc/string.h"
-#include "libc/mem.h"
 #include "libc/kprint.h"
 #include "mm/alloc.h"
 #include "cpu/x86.h"
@@ -14,6 +13,8 @@
 #include "kernel/page.h"
 #include "kernel/proc.h"
 #include "kernel/lapic.h"
+#include "libc/kprint.h"
+#include "mm/gdt.h"
 
 #define HD_NUM 2
 #define SYSTEM_PARAM_ADDR 0x9000
@@ -22,13 +23,64 @@
 char hd_num = 0;
 struct HD hd[HD_NUM];
 
+void calc()
+{
+  LOGI("calc1 start eip:%x esp:%x\n", eip(), esp());
+  int32_t sum = 0;
+  int32_t last_tick = 0;
+  for (int32_t i = 0; i < 1000; i++) {
+    for (int32_t j = 0; j < 1000000; j++) {
+      sum++;
+	  int32_t curr_tick = tick;
+	  if (curr_tick - last_tick/1000 *1000 >= 1000) {
+	    LOGI("calc1:%d %d %d %d %d eip:%x esp:%x\n", sum, i, j, curr_tick - last_tick, curr_tick, eip(), esp());
+		last_tick = curr_tick;
+	  }
+    }
+  }
+  LOGI("calc1 end\n");
+}
+
+void calc2()
+{
+  LOGI("calc2 start eip:%x esp:%x\n", eip(), esp());
+  int32_t sum = 0;
+  int32_t last_tick = 0;
+  for (int32_t i = 0; i < 1000; i++) {
+    for (int32_t j = 0; j < 1000000; j++) {
+      sum++;
+	  int32_t curr_tick = tick;
+	  if (curr_tick - last_tick/1000 *1000 >= 1000) {
+	    LOGI("calc2:%d %d %d %d %d eip:%x esp:%x\n", sum, i, j, curr_tick - last_tick, curr_tick, eip(), esp());
+		last_tick = curr_tick;
+	  }
+    }
+  }
+  LOGI("calc2 end\n");
+}
+
+void test_thread_local()
+{
+  thread_local int32_t tl;
+  int32_t tl2 = tl;
+  thread_local int32_t new_tl;
+  int32_t new_tl2 = new_tl;
+  UNUSED(tl2);
+  UNUSED(new_tl2);
+  uint32_t gs_addr = 0;
+  asm volatile ("movl %%gs, %0" : "=r"(gs_addr));
+  LOGI("thread_local tl:%x new_tl:%x gs:%x\n", &tl, &new_tl, gs_addr);
+}
+
 void kernel_main()
 {
-  kprintf("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
+  default_log_level = DEBUG;
+
+  LOGI("I am in kernel ebp:%x esp:%x eip:%x\n", ebp(), esp(), eip());
   isr_install();
   irq_install();
 
-  hd_setup((void*)(SYSTEM_PARAM_ADDR));
+  hd_setup((char*)(SYSTEM_PARAM_ADDR));
 
   init_syscall();
 
@@ -39,31 +91,48 @@ void kernel_main()
   // phy memory mgr
   install_alloc();
 
+  init_gdt();
+
   // 初始化processor启动过渡页表
   init_entry_page();
 
   // start other processor
-  startothers();
+  // startothers();
 
   set_cr3((uint32_t)entry_pg_dir);
 
+  // 启用分页
   open_mm_page();
+
   register_interrupt_handler(14, page_fault_handler);
 
   // 初始化文件系统
   init_file_system();
 
-  kprintf("create hello process>>>\n");
-  process_exec("hell", 0, NULL);
+  LOGI("create hello process>>>\n");
+  process_exec("hello");
 
-  // hang();
-  kprintf("start schedule process>>>\n");
-  scheduler();
+  LOGI("alloc calc1 proc\n");
+  alloc_proc((void*)calc, NULL);
+  LOGI("alloc calc2 proc\n");
+  alloc_proc((void*)calc2, NULL);
+  LOGI("alloc test proc\n");
+  alloc_proc((void*)test_thread_local, NULL);
+
+  LOGI("start schedule process>>>\n");
+  sched_loop();
 }
 
-void* hd_setup(void* addr)
+void sched_loop()
 {
-  hd_num = *((char*)addr);
+  while (true) {
+    schedule();
+  }
+}
+
+void* hd_setup(char* addr)
+{
+  hd_num = *addr;
   kprintf("hd_setup hd_num:%d\n", hd_num);
   addr++;
 
@@ -181,6 +250,17 @@ void user_input(char *input) {
     kprintf("-- alloc_buf=%x\n", alloc_buf);
   } else if (strcmp(cmd[0], "writemem") == 0) {
     memcpy((char*)(atoi(cmd[1])), cmd[2], strlen(cmd[2]));
+  } else if (strcmp(cmd[0], "ls") == 0) {
+	list_dir("/");
+  } else if (strcmp(cmd[0], "write") == 0) {
+	write_file(cmd[1], cmd[2], atoi(cmd[3]), atoi(cmd[4]));
+  } else if (strcmp(cmd[0], "read") == 0) {
+	uint32_t offset = atoi(cmd[2]);
+	uint32_t length = atoi(cmd[3]);
+	char * buf = (char*)alloc_mm(length);
+	read_file(cmd[1], buf, offset, length);
+	kprint_k(buf, length);
+	kprintf("\n");
   }
   kprint("los> ");
 }
@@ -188,7 +268,7 @@ void user_input(char *input) {
 // Start the non-boot (AP) processors.
 void startothers(void)
 {
-  kprintf("startothers\n");
+  kprintf("startothers: %d\n", ncpu);
   unsigned char *code;
   struct cpu *c;
   char *stack;
@@ -209,7 +289,7 @@ void startothers(void)
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
 
-    lapicstartap(c->apicid, code);
+    lapicstartap(c->apicid, (unsigned int)code);
 
     kprintf("wait for start cpu %d %x %x\n", c->apicid, stack, code);
     // wait for cpu to finish start
@@ -226,7 +306,7 @@ void mpenter()
   open_mm_page();
 
   cc->started = 1;
-  scheduler();
+  schedule();
 }
 
 // boot page table
@@ -236,20 +316,15 @@ uint32_t entry_pg_dir[1024];
 __attribute__((__aligned__(4096)))
 uint32_t entry_pg_table[1024];
 
-__attribute__((__aligned__(4096)))
-uint32_t reserve_for_map[1024];
-
 void init_entry_page()
 {
+  LOGI("entry_pg: %x %x\n", entry_pg_dir, entry_pg_table);
   MEMSET(entry_pg_dir, 0 , 4096);
   MEMSET(entry_pg_table, 0 , 4096);
-  MEMSET(reserve_for_map, 0 , 4096);
   entry_pg_dir[0] = (uint32_t)entry_pg_table | 3;
-  entry_pg_dir[MAP_PDE_IDX] = (uint32_t)entry_pg_dir | 3;
-  entry_pg_dir[MAP_PG_DIR_PDE_IDX] = (uint32_t)reserve_for_map | 3;
   // virtual address 0~4M -> phy address 0~4M
   for (int i = 0; i < 1024; i++) {
     entry_pg_table[i] = (i * 4096) | 3;
   }
-  reserve_for_map[0] = (uint32_t)entry_pg_dir | 3;
+  entry_pg_dir[MAP_PDE_IDX] = (uint32_t)entry_pg_dir | 3; // 页表自映射
 }

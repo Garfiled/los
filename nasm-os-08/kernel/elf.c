@@ -1,8 +1,8 @@
 #include "kernel/elf.h"
 #include "libc/string.h"
-#include "cpu/x86.h"
+#include "libc/kprint.h"
 
-int load_elf(char* content, uint32_t* entry_addr) 
+int load_elf(char* content, uint32_t* entry_addr)
 {
   elf32_ehdr_t* elf_header = (elf32_ehdr_t*)content;
 

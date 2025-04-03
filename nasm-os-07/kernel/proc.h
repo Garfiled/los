@@ -40,7 +40,9 @@ struct context {
   unsigned int esi;
   unsigned int ebx;
   unsigned int ebp;
+  unsigned int eflags;
   unsigned int eip;
+  unsigned int esp;
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
@@ -51,7 +53,7 @@ struct proc {
   enum procstate state;        // Process state
   uint32_t pgdir;              // Page table
   uint32_t stack;              // Bottom of stack for this process
-  //struct context *context;     // swtch() here to run process
+  struct context context;     // swtch() here to run process
   int killed;                  // If non-zero, have been killed
   char name[16];               // Process name (debugging)
   uint32_t entry;
@@ -65,6 +67,10 @@ static inline unsigned int readeflags(void)
   return eflags;
 }
 
-struct proc* alloc_proc();
+struct proc* alloc_proc(void *entry_func, const char* args);
 void test_proc();
 void swtch(uint32_t, uint32_t);
+
+extern struct proc *current_proc;
+void schedule();
+void exit(int status);

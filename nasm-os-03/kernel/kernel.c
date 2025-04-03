@@ -70,10 +70,12 @@ void kernel_main()
   hd_rw(0, HD_READ, 1, (void*)(0x9200));
 
   // find magic number
-  char *magic = (char*)0x9200 + 510;
-  kprint_k(magic, 2);
-  kprint("\n");
-  int val = *magic;
+  // use physical address is freedom for myself
+  unsigned char *magic = (unsigned char*)0x9200 + 510;
+
+  //kprint_k(magic, 2);
+  //kprint("\n");
+  unsigned int val = *magic;
   print_int(val);
   kprint("\n");
   print_hex(val);
@@ -82,6 +84,7 @@ void kernel_main()
   print_int(val);
   kprint("\n");
   print_hex(val);
+  kprint("\n");
 }
 
 void user_input(char *input)

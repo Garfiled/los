@@ -1,5 +1,6 @@
 #include "mm/alloc.h"
 #include "kernel/page.h"
+#include "libc/kprint.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -16,7 +17,7 @@ void* alloc_mm(int size)
   uint32_t addr = allocated;
   allocated += size;
   kprintf("alloc_mm allocated=%x size=%x %x\n", allocated, size, addr);
-  return addr; 
+  return (void*)addr;
 }
 
 void* alloc_mm_align(int size)
@@ -30,7 +31,7 @@ void* alloc_mm_align(int size)
   uint32_t addr = allocated;
   allocated += size;
   kprintf("alloc_mm_align allocated=%x size=%x %x\n", allocated, size, addr);
-  return addr; 
+  return (void*)addr;
 }
 /*
  * free_mm : 释放内存
@@ -40,4 +41,5 @@ void* alloc_mm_align(int size)
  */
 void free_mm(void* addr)
 {
+  UNUSED(addr);
 }

@@ -21,9 +21,10 @@ void* alloc_mm_align(int size);
  */
 void free_mm(void* addr);
 
-typedef struct
+typedef struct mm_desc_
 {
   bool free_;
-	int32_t len_;
-	struct mm_desc *prev_;
+  int32_t len_;
+  struct mm_desc_ *prev_;
 } mm_desc;
+

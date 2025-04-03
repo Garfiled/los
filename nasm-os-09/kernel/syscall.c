@@ -1,16 +1,23 @@
 #include "kernel/syscall.h"
+#include "drivers/screen.h"
+#include "kernel/proc.h"
 #include "libc/kprint.h"
-
 
 void init_syscall()
 {
-  register_interrupt_handler(0x80, syscall_handler);  
+  register_interrupt_handler(0x80, syscall_handler);
 }
 
 void syscall_handler(registers_t *r)
 {
-  kprintf("syscall_handler\n");
+  LOGI("syscall_handler: %d %d %d %d\n", r->eax, r->ebx, r->ecx, r->edx);
   if (r->eax == 4) {
-    kprint_k(r->ecx, r->edx);
+	if (r->ebx == 1) {
+	  // output to stdout
+      kprint_k((char*)r->ecx, r->edx);
+    }
+  } else if (r->eax == 1) {
+	// exit
+	exit(0);
   }
 }

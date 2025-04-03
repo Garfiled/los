@@ -1,8 +1,11 @@
 #pragma once
 
-#include "cpu/x86.h"
+#include <stdint.h>
 
 /* ISRs reserved for CPU exceptions */
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void isr0();
 extern void isr1();
 extern void isr2();
@@ -53,6 +56,9 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 extern void irq128();
+#ifdef __cplusplus
+}
+#endif
 
 #define IRQ0 32
 #define IRQ1 33
@@ -80,13 +86,22 @@ extern void irq128();
  */
 typedef struct {
    uint32_t ds; /* Data segment selector */
-   uint32_t edi, esi, ebp, useless, ebx, edx, ecx, eax; /* Pushed by pusha. */
+   uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; /* Pushed by pusha. */
    uint32_t int_no, err_code; /* Interrupt number and error code (if applicable) */
-   uint32_t eip, cs, eflags, esp, ss; /* Pushed by the processor automatically */
+   uint32_t eip, cs, eflags; /* CPU自动压入 */
+   uint32_t user_esp,user_ss; //发生特权级切换,CPU自动压入的用户态栈信息
 } registers_t;
 
 void isr_install();
+#ifdef __cplusplus
+extern "C" {
+#endif
 void isr_handler(registers_t *r);
+void irq_handler(registers_t *r);
+#ifdef __cplusplus
+}
+#endif
+
 void irq_install();
 
 typedef void (*isr_t)(registers_t*);

@@ -61,7 +61,8 @@ void reverse(char *s) {
 }
 
 /* K&R */
-int strlen(char *s) {
+int strlen(const char *s)
+{
   int i = 0;
   while (s[i] != '\0') ++i;
   return i;
@@ -80,7 +81,7 @@ void backspace(char *s) {
 
 /* K&R
  * Returns <0 if s1<s2, 0 if s1==s2, >0 if s1>s2 */
-int strcmp(char *s1, char *s2) {
+int strcmp(const char *s1, const char *s2) {
   int i;
   for (i = 0; s1[i] == s2[i]; i++) {
     if (s1[i] == '\0') return 0;
@@ -88,7 +89,7 @@ int strcmp(char *s1, char *s2) {
   return s1[i] - s2[i];
 }
 
-int strcmpN(char *s1, char *s2,int n) {
+int strcmpN(const char *s1, const char *s2,int n) {
  for (int i = 0;i<n; i++) {
    if (s1[i]==s2[i])
  	   continue;

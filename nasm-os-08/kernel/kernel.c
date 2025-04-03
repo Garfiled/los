@@ -6,12 +6,14 @@
 #include "libc/kprint.h"
 #include "mm/alloc.h"
 #include "cpu/x86.h"
+#include "fs/vfs.h"
 
 #include "kernel/mp.h"
 #include "kernel/kernel.h"
 #include "kernel/page.h"
 #include "kernel/proc.h"
 #include "kernel/lapic.h"
+#include "kernel/syscall.h"
 
 #define HD_NUM 2
 #define SYSTEM_PARAM_ADDR 0x9000
@@ -27,10 +29,7 @@ void kernel_main() {
 
   init_syscall();
 
-  //asm("int $2");
-  //asm("int $3");
-
-	hd_setup((void*)(SYSTEM_PARAM_ADDR));
+  hd_setup((void*)(SYSTEM_PARAM_ADDR));
 
   mpinit();
 
@@ -41,7 +40,7 @@ void kernel_main() {
 
   // 初始化processor启动过渡页表
   init_entry_page();
-  
+
   // start other processor
   //startothers();
 
@@ -50,7 +49,7 @@ void kernel_main() {
 
   open_mm_page();
   register_interrupt_handler(14, page_fault_handler);
-  
+
   // 初始化文件系统
   init_file_system();
 
@@ -60,8 +59,15 @@ void kernel_main() {
   //  kprintf("alloc first proc:%x %d\n", first_p, first_p->pid);
   //}
 
-  process_exec("hell", 0, NULL);
-  scheduler();
+  process_exec("hell");
+  sched_loop();
+}
+
+void sched_loop()
+{
+  while (1) {
+    schedule();
+  }
 }
 
 void* hd_setup(void* addr) {
@@ -73,11 +79,11 @@ void* hd_setup(void* addr) {
 	{
 		if (i<HD_NUM)
 		{
-			hd[i].cyl = *((unsigned int*)(addr+4));			
-			hd[i].head = *((unsigned int*)(addr+8));			
-			hd[i].sector = *((unsigned int*)(addr+12));			
-			hd[i].nsectors = *((unsigned long*)(addr+16));			
-			hd[i].sector_bytes = *((unsigned int*)(addr+24));			
+			hd[i].cyl = *((unsigned int*)(addr+4));
+			hd[i].head = *((unsigned int*)(addr+8));
+			hd[i].sector = *((unsigned int*)(addr+12));
+			hd[i].nsectors = *((unsigned long*)(addr+16));
+			hd[i].sector_bytes = *((unsigned int*)(addr+24));
 		}
 		addr += 30;
 	}
@@ -103,7 +109,7 @@ void print_mem(char s[])
 }
 
 void read_hd_cmd(char s[])
-{	
+{
 	int start_sector = atoi(s);
 	//kprint_int(start_sector);
 	//kprint("\n");
@@ -116,7 +122,7 @@ void read_hd_cmd(char s[])
 }
 
 void write_hd(char s[])
-{	
+{
 	int start_sector = atoi(s);
   char* buf = (char*)alloc_mm(512);
   if (buf == NULL) {
@@ -183,7 +189,7 @@ void startothers(void)
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
 
-    lapicstartap(c->apicid, code);
+    lapicstartap(c->apicid, (unsigned int)code);
 
     kprintf("wait for start cpu %d %x %x\n", c->apicid, stack, code);
     // wait for cpu to finish start
@@ -198,9 +204,9 @@ void mpenter()
   kprintf("mpenter cpu:%d esp:%x cc:%x lapic:%x\n", cc->apicid, esp(), cc, lapic);
   set_cr3((uint32_t)entry_pg_dir);
   open_mm_page();
-  
+
   cc->started = 1;
-  scheduler();
+  sched_loop();
 }
 
 // boot page table
@@ -210,20 +216,14 @@ uint32_t entry_pg_dir[1024];
 __attribute__((__aligned__(4096)))
 uint32_t entry_pg_table[1024];
 
-__attribute__((__aligned__(4096)))
-uint32_t reserve_for_map[1024];
-
 void init_entry_page()
 {
   MEMSET(entry_pg_dir, 0 , 4096);
   MEMSET(entry_pg_table, 0 , 4096);
-  MEMSET(reserve_for_map, 0 , 4096);
   entry_pg_dir[0] = (uint32_t)entry_pg_table | 3;
-  entry_pg_dir[MAP_PDE_IDX] = (uint32_t)entry_pg_dir | 3;
-  entry_pg_dir[MAP_PG_DIR_PDE_IDX] = (uint32_t)reserve_for_map | 3;
-  // virtual address 0~4M -> phy address 0~4M 
+  // virtual address 0~4M -> phy address 0~4M
   for (int i = 0; i < 1024; i++) {
     entry_pg_table[i] = (i * 4096) | 3;
   }
-  reserve_for_map[0] = (uint32_t)entry_pg_dir | 3; 
+  entry_pg_dir[MAP_PDE_IDX] = (uint32_t)entry_pg_dir | 3; // 页表自映射
 }

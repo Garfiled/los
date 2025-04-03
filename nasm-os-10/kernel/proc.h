@@ -1,12 +1,8 @@
-// Per-CPU state
-
 #pragma once
 
 #include "kernel/mp.h"
-#include "cpu/x86.h"
 
 #define NPROC        4096
-
 #define FL_IF           0x00000200
 
 struct cpu {
@@ -40,22 +36,24 @@ struct context {
   unsigned int esi;
   unsigned int ebx;
   unsigned int ebp;
+  unsigned int eflags;
   unsigned int eip;
+  unsigned int esp;
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
-  int pid;                     // Process ID
+  uint32_t pid;                     // Process ID
   enum procstate state;        // Process state
   uint32_t pgdir;              // Page table
   uint32_t stack;              // Bottom of stack for this process
-  //struct context *context;     // swtch() here to run process
   int killed;                  // If non-zero, have been killed
   char name[16];               // Process name (debugging)
   uint32_t entry;
-  uint32_t stack_store;
+  struct context context;     //
+  int priority;               // 进程优先级
 };
 
 static inline unsigned int readeflags(void)
@@ -65,8 +63,22 @@ static inline unsigned int readeflags(void)
   return eflags;
 }
 
-struct proc* alloc_proc(void *entry_func);
+extern struct proc *current_proc;
+
+#define TIME_QUANTUM 100  // 每个进程的时间片长度（tick数）
+
+void schedule();
+
+struct proc* alloc_proc(void *entry_func, const char* args);
 void test_proc();
-void swtch(uint32_t, uint32_t);
-int process_exec(char *path, int argc, char *argv[]);
-int exec(char *path, int argc, char *argv[]);
+int process_exec(const char *args);
+int exec(const char* args);
+#ifdef __cplusplus
+extern "C" {
+#endif
+void switch_context(struct context *, struct context *);
+#ifdef __cplusplus
+}
+#endif
+
+void exit(int status);

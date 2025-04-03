@@ -1,4 +1,4 @@
-[org 0x7c00]
+[org 0x7c00] ;BIOS加载引导扇区的标准地址
 [bits 16]
 KERNEL_OFFSET equ 0x10000 ; The same one we used when linking the kernel
 SETUP equ 0x7e00  ;SETUP addr
@@ -118,7 +118,7 @@ load_kernel:
     mov bx, 0x1000
     mov es, bx
     mov bx, 0x0 ; Read from disk and store in 0x10000
-    mov dh, 128 ; Our future kernel will be larger, make this big
+    mov dh, 120 ; Our future kernel will be larger, make this big
     mov dl, [BOOT_DRIVE]
     mov cl, 0x9
     call disk_load

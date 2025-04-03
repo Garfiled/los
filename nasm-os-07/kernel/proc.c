@@ -1,10 +1,11 @@
-#include "proc.h"
-#include "page.h"
-#include "../libc/kprint.h"
-#include "../cpu/x86.h"
+#include "kernel/proc.h"
+#include "kernel/page.h"
+#include "libc/kprint.h"
+#include "cpu/x86.h"
+#include "kernel/kernel.h"
+#include "libc/string.h"
+#include "kernel/lapic.h"
 #include <stddef.h>
-#include "kernel.h"
-#include "../libc/string.h"
 
 
 struct {
@@ -12,6 +13,8 @@ struct {
 } ptable;
 
 int nextpid = 1;
+
+struct proc *current_proc = NULL;
 
 // Must be called with interrupts disabled to avoid the caller being
 // rescheduled between reading lapicid and running through the loop.
@@ -37,7 +40,7 @@ struct cpu* mycpu(void)
   return NULL;
 }
 
-struct proc* alloc_proc()
+struct proc* alloc_proc(void *entry_func, const char* args)
 {
   struct proc* p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -50,17 +53,18 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   // pg dir
-  p->pgdir = (uint32_t)alloc_pte_for_proc();
+  p->pgdir = (uint32_t)alloc_pte_for_proc(p->pid, args);
   if (p->pgdir == 0) {
     kprintf("alloc_pte_for_proc fail\n");
     return NULL;
   }
-  // stack 1G+3K
-  p->stack = MAP_STACK_ADDR + 3 * 1024;
-  p->entry = test_proc;
-  //MEMSET(p->context, 0, sizeof *p->context);
+  p->stack = MAP_STACK_ADDR - 2048; // 3G - 2KB
+  p->entry = (uint32_t)(entry_func);
+  memset((char*)&p->context, 0, sizeof(p->context));
+  p->context.eip = p->entry;
+  p->context.esp = p->stack;
+  p->context.ebp = p->stack;
   p->killed = 0;
-  
   p->state = RUNNABLE;
   return p;
 }
@@ -73,8 +77,8 @@ void release_proc(struct proc* p)
   p->stack = 0;
   p->entry = 0;
   p->killed = 0;
- 
-  release_pte_for_proc(p->pgdir); 
+
+  free_pte_for_proc(p->pgdir);
   p->state = UNUSED;
 }
 
@@ -84,24 +88,46 @@ void test_proc()
   kprintf("cr3:%x esp:%x\n",cr3(), esp());
 }
 
-void scheduler(void)
+void schedule(void)
 {
   struct proc *p;
-
-  for(;;){
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-      
-      p->state = RUNNING;
-      kprintf("scheduler> pid:%d pgdir:%x stack:%x esp:%x\n", p->pid, p->pgdir, p->stack, esp());
-      set_cr3(p->pgdir);
-      kprintf("cr3:%x esp:%x\n",cr3(), esp());
-      
-      swtch(p->stack, p->entry);
-      // It should have changed its p->state before coming back.
-      set_cr3(entry_pg_dir);      
+  struct proc* candi_p = NULL;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == RUNNABLE) {
+	  candi_p = p;
+    } else if (p->state == ZOMBIE) {
       release_proc(p);
+      current_proc = NULL;
     }
+    if (candi_p) {
+      candi_p->state = RUNNING;
+      current_proc = candi_p;
+      __asm__ volatile(
+       "sti\n\t"
+       "mov %0, %%cr3\n\t"
+       "mov %1, %%esp\n\t"
+       "mov %2, %%ebp\n\t"
+       "jmp %3"
+         : : "r"(current_proc->pgdir),
+             "r"(current_proc->context.esp),
+             "r"(current_proc->context.ebp),
+             "r"(current_proc->context.eip)
+              );
+
+	  }
   }
+}
+
+void exit(int status)
+{
+  UNUSED(status);
+  current_proc->state = ZOMBIE;
+  __asm__ volatile(
+    "mov %0, %%cr3\n\t"
+    "mov %1, %%esp\n\t"
+	"jmp %2"
+    : : "r"(entry_pg_dir),
+        "r"(PDE_SIZE),
+        "r"(sched_loop)
+  );
 }

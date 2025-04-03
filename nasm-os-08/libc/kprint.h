@@ -2,4 +2,4 @@
 
 #include "drivers/screen.h"
 
-extern int kprintf(char *fmt, ...);
+extern int kprintf(const char *fmt, ...);

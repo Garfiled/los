@@ -1,7 +1,5 @@
 #include "kernel/elf.h"
-#include "cpu/x86.h"
 #include "libc/string.h"
-#include "libc/kprint.h"
 
 int load_elf(char* content, uint32_t* entry_addr)
 {

@@ -11,6 +11,7 @@ void check_hd_status();
 void reset_hd_controller();
 void read_hd(bool, char* buf, uint32_t offset, uint32_t size);
 void read_hd_split(bool, char* buf, uint32_t offset, uint32_t size);
+void write_hd_split(bool is_master_device, char* buf, uint32_t offset, uint32_t size);
 
 //  LBS request address
 #define HD_PORT_DATA            0x1f0

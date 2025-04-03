@@ -1,31 +1,23 @@
 ;Context switch
-
-STACK_SAVE_ADDR equ 0x40000000 + 4096 - 4
-  global swtch
-swtch:
-  mov eax, [esp + 4] ; stack
-  mov edx, [esp + 8] ; entry
-
-  push ebp
-  push ebx
-  push esi
-  push edi
-
-  ; save
-  mov [STACK_SAVE_ADDR], esp
-
-  mov esp, eax
-
-  pop edi
-  pop esi
-  pop ebx
-  pop ebp
-
-  call edx
-  mov esp, [STACK_SAVE_ADDR]
-
-  pop edi
-  pop esi
-  pop ebx
-  pop ebp
-  ret
+  global switch_context
+switch_context:
+    ; 保存旧上下文
+    mov eax, [esp + 4]    ; old
+    pushfd
+    push ebp
+    push ebx
+    push esi
+    push edi
+    mov [eax], esp        ; 保存旧栈指针
+    
+    ; 加载新上下文
+    mov eax, [esp + 28]   ; new
+    mov esp, [eax]
+    
+    ; 恢复新上下文
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+    popfd
+    ret

@@ -51,7 +51,7 @@ irq_common_stub:
     mov gs, bx
     popa
     add esp, 8
-    iret 
+    iret ;中断返回，弹出CS:EIP, EFLAGS, SS:ESP（若涉及特权级切换）
 	
 ; We don't get information about which interrupt was caller
 ; when the handler is run, so we will need to have a different handler

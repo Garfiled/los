@@ -1,8 +1,8 @@
 #pragma once
 
-#include "fs/file.h"
+#include "fs/vfs.h"
 
-struct naive_file_meta 
+struct naive_file_meta
 {
   char filename[4];
   uint32_t size;
@@ -12,3 +12,4 @@ struct naive_file_meta
 typedef struct naive_file_meta naive_file_meta_t;
 
 void init_naive_fs();
+fs_t* get_naive_fs();

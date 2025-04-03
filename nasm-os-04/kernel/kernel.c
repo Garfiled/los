@@ -160,7 +160,6 @@ void user_input(char *input) {
   } else if (strcmpN(input, "cls", 3) == 0) {
     clear_screen();
   }
-
   kprint("You said: ");
   kprint(input);
   kprint("\n> ");

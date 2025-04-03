@@ -2,10 +2,10 @@
 #include "cpu/ports.h"
 #include "libc/function.h"
 #include "libc/string.h"
-#include "libc/kprint.h"
 #include "drivers/screen.h"
 #include "drivers/hd.h"
 #include "mm/alloc.h"
+#include "libc/kprint.h"
 
 struct hd_request
 {
@@ -25,9 +25,8 @@ static void hd_interrupt(registers_t *regs) {
   //kprintf("--hd_interrupt status:%d\n", status);
 }
 
-void init_hd(uint32_t freq)
+void init_hd()
 {
-  UNUSED(freq);
   register_interrupt_handler(IRQ14, hd_interrupt);
 
    /* Send the command */
@@ -48,11 +47,15 @@ void init_hd(uint32_t freq)
 
 void hd_wait_ready()
 {
-  // 等待设备空闲
-  while (port_byte_in(HD_PORT_STATUS) < 0 ) {
-  }
-  while ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40) {
-  }
+    // 等待设备不再忙（BUSY位为0）
+    while (port_byte_in(HD_PORT_STATUS) & 0x80) { // 检查Bit7 (BUSY)
+        // 可选：添加短暂延迟或让出CPU以避免忙等待
+    }
+
+    // 等待设备就绪（READY位为1且BUSY位为0，即0x40）
+    while ((port_byte_in(HD_PORT_STATUS) & 0xC0) != 0x40) { // 检查Bit7和Bit6
+        // 同样可考虑延迟
+    }
 }
 
 void hd_rw(bool is_master_device, uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
@@ -103,8 +106,8 @@ void read_hd(bool is_master_device, char* buf, uint32_t offset, uint32_t size)
   } else {
     size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
   }
-  char *buf_align = alloc_mm_align(size_align);
-  // kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
+  char *buf_align = (char*)alloc_mm_align(size_align);
+  //kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
   hd_rw(is_master_device, offset_align/512, HD_READ, size_align/512, buf_align);
   //kprint("--read_hd_data: ");
   //kprint_hex_n((char*)curr_hd_request.buf, 10);
@@ -122,17 +125,33 @@ void read_hd_split(bool is_master_device, char* buf, uint32_t offset, uint32_t s
   } else {
     size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
   }
-  char *buf_align = alloc_mm_align(size_align);
-  //kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
+  char *buf_align = (char*)alloc_mm_align(size_align);
   if (size_align > 512) {
-    for (int i=0;i<size_align/512;i++) {
+    for (uint32_t i=0;i<size_align/512;i++) {
       hd_rw(is_master_device, (offset_align + 512 * i)/512, HD_READ, 512/512, buf_align + i * 512);
     }
   }
-  //kprint("--read_hd_data: ");
-  //kprint_hex_n((char*)curr_hd_request.buf, 10);
-  //kprint("\n");
   MEMMOVE(buf, buf_align + offset - offset_align, size);
+  free_mm(buf_align);
+}
+
+void write_hd_split(bool is_master_device, char* buf, uint32_t offset, uint32_t size)
+{
+  uint32_t offset_align = offset / 4096 * 4096;
+  uint32_t size_align = 0;
+  if ((offset + size - offset_align) % 4096 == 0) {
+    size_align = offset + size - offset_align;
+  } else {
+    size_align = ((offset + size - offset_align) / 4096 + 1) * 4096;
+  }
+  char *buf_align = (char*)alloc_mm_align(size_align);
+  read_hd_split(is_master_device, buf_align, offset_align, size_align);
+  memcpy(buf_align + offset - offset_align, buf, size);
+  if (size_align > 512) {
+    for (uint32_t i=0;i<size_align/512;i++) {
+      hd_rw(is_master_device, (offset_align + 512 * i)/512, HD_WRITE, 512/512, buf_align + i * 512);
+    }
+  }
   free_mm(buf_align);
 }
 

@@ -7,15 +7,18 @@
 #define PAGE_ALIGN_SIZE (4096)
 #define PDE_SIZE 4 * 1024 * 1024
 
-// 虚拟地址空间2G处，做页表的映射
-#define MAP_PAGE_TABLE_START 0x80000000
-#define MAP_PAGE_TABLE_PG_DIR MAP_PAGE_TABLE_START + PDE_SIZE
-#define MAP_PAGE_TABLE_UNUSE MAP_PAGE_TABLE_PG_DIR + PAGE_ALIGN_SIZE
-#define MAP_STACK_ADDR 0x40000000
+// 4G - 4M
+#define MAP_PAGE_TABLE_START (uint32_t)0xFFC00000
+// 4G - 4KB
+#define MAP_PAGE_TABLE_PG_DIR (uint32_t)(0xFFFFF000)
+// 4G - 8KB
+#define MAP_PAGE_TABLE_UNUSE (uint32_t)(0xFFFFE000)
+// 3G
+#define MAP_STACK_ADDR 0xC0000000
 
-#define MAP_PDE_IDX 512
-#define MAP_PG_DIR_PDE_IDX 513
-#define MAP_STACK_PDE_IDX 256
+#define MAP_UNUSED_IDX 1022
+#define MAP_PDE_IDX 1023
+#define MAP_STACK_PDE_IDX 767
 
 #define PTE_P           0x001   // Present
 #define PTE_W           0x002   // Writeable
@@ -67,7 +70,7 @@ typedef struct isr_params {
   uint32_t eip, cs, eflags, user_esp, user_ss;
 } isr_params_t;
 
-void* alloc_pte_for_proc();
+void* alloc_pte_for_proc(uint32_t pid, const char* args);
 void free_pte_for_proc(uint32_t phy_addr);
 void map_pte(uint32_t addr);
 void page_fault_handler(registers_t *r);

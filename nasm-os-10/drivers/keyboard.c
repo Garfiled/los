@@ -14,11 +14,11 @@
 static char key_buffer[256];
 
 #define SC_MAX 57
-const char *sc_name[] = { "ERROR", "Esc", "1", "2", "3", "4", "5", "6", 
-    "7", "8", "9", "0", "-", "=", "Backspace", "Tab", "Q", "W", "E", 
-        "R", "T", "Y", "U", "I", "O", "P", "[", "]", "Enter", "Lctrl", 
-        "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "`", 
-        "LShift", "\\", "Z", "X", "C", "V", "B", "N", "M", ",", ".", 
+const char *sc_name[] = { "ERROR", "Esc", "1", "2", "3", "4", "5", "6",
+    "7", "8", "9", "0", "-", "=", "Backspace", "Tab", "Q", "W", "E",
+        "R", "T", "Y", "U", "I", "O", "P", "[", "]", "Enter", "Lctrl",
+        "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "`",
+        "LShift", "\\", "Z", "X", "C", "V", "B", "N", "M", ",", ".",
         "/", "RShift", "Keypad *", "LAlt", "Spacebar"};
 const char sc_ascii[] =  {
          0 ,  0 , '1', '2',
@@ -36,14 +36,14 @@ const char sc_ascii[] =  {
         'b', 'n', 'm', ',',
         '.', '/',  0 , '*',
          0 , ' '
-    }; 
+    };
 
 static void keyboard_callback(registers_t *regs) {
   UNUSED(regs);
     /* The PIC leaves us the scancode in port 0x60 */
   uint8_t scancode = port_byte_in(0x60);
   static bool isLeftShiftPressed = false;
-  static bool isRightShiftPressed = false;  
+  static bool isRightShiftPressed = false;
   if (scancode > SC_MAX) return;
   switch (scancode){
     case LeftShift:
@@ -58,21 +58,24 @@ static void keyboard_callback(registers_t *regs) {
     case RightShift + 0x80:
       isRightShiftPressed = false;
       break;
-    case Enter:
+    case Enter: {
       kprint("\n");
       user_input(key_buffer); /* kernel-controlled function */
       key_buffer[0] = '\0';
       break;
-    case Spacebar:
+	}
+    case Spacebar: {
       char buf[2] = {' ', '\0'};
       append(key_buffer, ' ');
       kprint(buf);
       break;
-    case BackSpace:
+    }
+    case BackSpace: {
       backspace(key_buffer);
       kprint_backspace();
       break;
-    default:
+	}
+    default: {
       char letter;
       if (isLeftShiftPressed | isRightShiftPressed) {
         letter = sc_ascii[(int)scancode] -32;
@@ -84,8 +87,9 @@ static void keyboard_callback(registers_t *regs) {
       append(key_buffer, letter);
       kprint(str);
     }
+  }
 }
 
 void init_keyboard() {
-   register_interrupt_handler(IRQ1, keyboard_callback); 
+   register_interrupt_handler(IRQ1, keyboard_callback);
 }

@@ -7,7 +7,7 @@
 #include "drivers/hd.h"
 #include "mm/alloc.h"
 
-struct hd_request 
+struct hd_request
 {
 	uint32_t lba;
 	uint8_t  cmd;
@@ -19,19 +19,20 @@ int open_debug = 0;
 
 static struct hd_request curr_hd_request;
 
-static void hd_interrupt(registers_t *regs) {
+static void hd_interrupt(registers_t *regs)
+{
   UNUSED(regs);
 	//uint8_t status = port_byte_in(HD_PORT_STATUS);
 	//kprintf("--hd_interrupt status:%d\n", status);
 }
 
-void init_hd(uint32_t freq) {
-   UNUSED(freq);
-   register_interrupt_handler(IRQ14, hd_interrupt);
+void init_hd()
+{
+  register_interrupt_handler(IRQ14, hd_interrupt);
 
-    /* Send the command */
-   port_byte_out(port_byte_in(0x21)&0xfb, 0x21); /* Command port */
-   port_byte_out(port_byte_in(0xA1)&0xbf, 0xA1);
+   /* Send the command */
+  port_byte_out(port_byte_in(0x21)&0xfb, 0x21); /* Command port */
+  port_byte_out(port_byte_in(0xA1)&0xbf, 0xA1);
 }
 
 // CHS request address
@@ -47,46 +48,50 @@ void init_hd(uint32_t freq) {
 
 void hd_wait_ready()
 {
-  // 等待设备空闲
-	while (port_byte_in(HD_PORT_STATUS) < 0 ) {
-	}
-	while ((port_byte_in(HD_PORT_STATUS) & 0xc0) != 0x40) {
-	}
+    // 等待设备不再忙（BUSY位为0）
+  while (port_byte_in(HD_PORT_STATUS) & 0x80) { // 检查Bit7 (BUSY)
+      // 可选：添加短暂延迟或让出CPU以避免忙等待
+  }
+
+  // 等待设备就绪（READY位为1且BUSY位为0，即0x40）
+  while ((port_byte_in(HD_PORT_STATUS) & 0xC0) != 0x40) { // 检查Bit7和Bit6
+      // 同样可考虑延迟
+  }
 }
 
 void hd_rw(uint32_t lba, uint8_t cmd, uint16_t nsects, void *buf)
 {
   kprintf("hd_rw: %x %x %x %x\n", lba, cmd, nsects, buf);
   hd_wait_ready();
-	curr_hd_request.lba = lba;
-	curr_hd_request.cmd = cmd;
-	curr_hd_request.nsects = nsects;
-	curr_hd_request.buf = buf;
-	
-	//计算扇区号
-	uint8_t lba0 = (uint8_t) (lba & 0xff);
-	uint8_t lba1 = (uint8_t) (lba >> 8 & 0xff);
-	uint8_t lba2 = (uint8_t) (lba >> 16 & 0xff);
-	uint8_t lba3 = (uint8_t) (lba >> 24 & 0xf);
+  curr_hd_request.lba = lba;
+  curr_hd_request.cmd = cmd;
+  curr_hd_request.nsects = nsects;
+  curr_hd_request.buf = buf;
 
-	//IDE0主设备
-	lba3 |= 0xe0; // 1110 0000
+  //计算扇区号
+  uint8_t lba0 = (uint8_t) (lba & 0xff);
+  uint8_t lba1 = (uint8_t) (lba >> 8 & 0xff);
+  uint8_t lba2 = (uint8_t) (lba >> 16 & 0xff);
+  uint8_t lba3 = (uint8_t) (lba >> 24 & 0xf);
 
-	//发送读写命令
-	port_byte_out(HD_PORT_SECT_COUNT, nsects);
-	port_byte_out(HD_PORT_LBA0, lba0);
-	port_byte_out(HD_PORT_LBA1, lba1);
-	port_byte_out(HD_PORT_LBA2, lba2);
-	port_byte_out(HD_PORT_LBA3, lba3);
-	port_byte_out(HD_PORT_COMMAND, cmd);
+  //IDE0主设备
+  lba3 |= 0xe0; // 1110 0000
+
+  //发送读写命令
+  port_byte_out(HD_PORT_SECT_COUNT, nsects);
+  port_byte_out(HD_PORT_LBA0, lba0);
+  port_byte_out(HD_PORT_LBA1, lba1);
+  port_byte_out(HD_PORT_LBA2, lba2);
+  port_byte_out(HD_PORT_LBA3, lba3);
+  port_byte_out(HD_PORT_COMMAND, cmd);
 
   hd_wait_ready();
- 
+
   if (curr_hd_request.cmd == HD_READ) {
-		port_read(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
+    port_read(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
   } else if (curr_hd_request.cmd == HD_WRITE) {
-		port_write(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
-  } 
+	port_write(HD_PORT_DATA, curr_hd_request.buf, curr_hd_request.nsects * 256);
+  }
 }
 
 void read_hd(char* buf, uint32_t offset, uint32_t size)
@@ -100,7 +105,7 @@ void read_hd(char* buf, uint32_t offset, uint32_t size)
   }
   char *buf_align = alloc_mm_align(size_align);
   kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
-  hd_rw(offset_align/512, HD_READ, size_align/512, buf_align); 
+  hd_rw(offset_align/512, HD_READ, size_align/512, buf_align);
   kprint("--read_hd_data: ");
   kprint_hex_n((char*)curr_hd_request.buf, 10);
   kprint("\n");
@@ -120,8 +125,8 @@ void read_hd_split(char* buf, uint32_t offset, uint32_t size)
   char *buf_align = alloc_mm_align(size_align);
   kprintf("read_hd: buf=%x offset=%x size=%x\n", buf_align, offset_align, size_align);
   if (size_align > 512) {
-    for (int i=0;i<size_align/512;i++) {
-      hd_rw((offset_align + 512 * i)/512, HD_READ, 512/512, buf_align + i * 512); 
+    for (uint32_t i=0;i<size_align/512;i++) {
+      hd_rw((offset_align + 512 * i)/512, HD_READ, 512/512, buf_align + i * 512);
     }
   }
   kprint("--read_hd_data: ");
@@ -133,17 +138,17 @@ void read_hd_split(char* buf, uint32_t offset, uint32_t size)
 
 void check_hd_status()
 {
-	uint8_t status = port_byte_in(HD_PORT_STATUS);
-	kprint("hd_status: ");
-	kprint_int(status);
-	kprint("\n");
+  uint8_t status = port_byte_in(HD_PORT_STATUS);
+  kprint("hd_status: ");
+  kprint_int(status);
+  kprint("\n");
 }
 
 void reset_hd_controller()
 {
-	kprint("reset:\n");
-	port_byte_out(HD_CMD,4);
-	for (int i=1000;i>0;i--);
-	port_byte_out(HD_CMD,8);
-	for (int i=1000;i>0;i--);
+  kprint("reset:\n");
+  port_byte_out(HD_CMD,4);
+  for (int i=1000;i>0;i--);
+  port_byte_out(HD_CMD,8);
+  for (int i=1000;i>0;i--);
 }

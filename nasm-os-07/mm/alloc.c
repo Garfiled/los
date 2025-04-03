@@ -1,7 +1,7 @@
-#include "./alloc.h"
+#include "mm/alloc.h"
+#include "cpu/x86.h"
 #include <stddef.h>
 #include <stdint.h>
-#include "../kernel/page.h"
 
 /*
  * alloc_mm : 申请内存
@@ -11,11 +11,10 @@
 
 void* alloc_mm(int size)
 {
+  UNUSED(size);
   static uint32_t allocated = 16 * 1024 * 1024;
-  //uint32_t address = allocated;
   allocated += 4096;
-  //uint32_t address = 16 * 1024 * 1024;
-  return (void*)allocated; 
+  return (void*)allocated;
 }
 
 /*
@@ -26,4 +25,5 @@ void* alloc_mm(int size)
  */
 void free_mm(void* addr)
 {
+  UNUSED(addr);
 }

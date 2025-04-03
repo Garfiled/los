@@ -12,10 +12,10 @@ int puts(char *str)
   return kprint(str);
 }
 
-int kprintf(char *fmt, ...)
+int kprintf(const char *fmt, ...)
 {
 	//显示数字缓冲区
-	char buff[0x800];
+	char buff[0x100];
 	//显示字符串指针
 	char *str;
 	//显示字符变量
@@ -34,7 +34,7 @@ int kprintf(char *fmt, ...)
 		if (*fmt == '%') {
 			//显示一个字符
 			if ('c' == *(fmt + 1)) {
-				ch = va_arg(args, char);
+				ch = va_arg(args, int);
 				putchar(ch);
 				count++;
 				fmt += 2;
