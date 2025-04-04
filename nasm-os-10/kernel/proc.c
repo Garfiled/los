@@ -131,7 +131,7 @@ void schedule(void)
 	  "mov %0, %%cr3\n\t"
       "mov %1, %%esp\n\t"
       "mov %2, %%ebp\n\t"
-      "jmp %3"
+      "jmp *%3"
         : : "r"(current_proc->pgdir),
 		    "r"(current_proc->context.esp),
 		    "r"(current_proc->context.ebp),
@@ -177,7 +177,7 @@ int exec(const char* args)
 
   LOGD("call_elf on entry:%x\n", exec_entry);
   asm volatile("movl %%eax, %%edx" :: "a"(exec_entry));
-  asm volatile("call %edx");
+  asm volatile("call *%edx");
   free_mm(read_buffer);
   return 0;
 }
@@ -190,7 +190,7 @@ void exit(int status)
   __asm__ volatile(
     "mov %0, %%cr3\n\t"
     "mov %1, %%esp\n\t"
-	"jmp %2"
+	"jmp *%2"
     : : "r"(entry_pg_dir),
         "r"(PDE_SIZE),
         "r"(sched_loop)

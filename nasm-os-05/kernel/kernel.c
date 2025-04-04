@@ -25,9 +25,6 @@ void kernel_main()
   isr_install();
   irq_install();
 
-  asm("int $2");
-  asm("int $3");
-
   hd_setup((void*)(SYSTEM_PARAM_ADDR));
 
   // install virtual memory mangement
@@ -126,7 +123,8 @@ void split(char *input, char delim, char **dest, int *count)
   }
 }
 
-void user_input(char *input) {
+void user_input(char *input)
+{
   char *cmd[8] = {0};
   int cmd_num = 0;
   split(input, ' ', cmd, &cmd_num);

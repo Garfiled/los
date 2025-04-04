@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#define UNUSED(x) (void)(x)
+
 static inline uint32_t ebp()
 {
   uint32_t ebp;

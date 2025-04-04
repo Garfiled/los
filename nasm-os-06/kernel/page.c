@@ -75,9 +75,6 @@ void install_page()
     reg_once = 1;
     register_interrupt_handler(14, page_fault_handler);
   }
-  //while (1) {
-  //  __asm__ volatile("hlt");
- // }
 }
 
 //内存使用位图
@@ -206,7 +203,7 @@ void free_page_by_pid(uint32_t pid)
 
 uint32_t *find_page_table(uint32_t address)
 {
-	uint32_t *page_dir = 0x400000;
+  uint32_t *page_dir = (uint32_t*)0x400000;
 
   // 高10位存放的是dir offset
   uint32_t page_dir_offset = address >> 22;
@@ -255,6 +252,11 @@ void page_fault_handler(registers_t *r)
   int reserved = r->err_code & 0x8;
   // caused by an instruction fetch?
   int id = r->err_code & 0x10;
+  UNUSED(present);
+  UNUSED(rw);
+  UNUSED(user_mode);
+  UNUSED(reserved);
+  UNUSED(id);
 
   bind_addr_phy_page(faulting_address);
 }

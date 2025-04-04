@@ -20,16 +20,6 @@ extern uint32_t tick;
 char hd_num = 0;
 struct HD hd[HD_NUM];
 
-void set_stack(uint32_t);
-
-inline set_stack(uint32_t stack_addr)
-{
-  __asm__ volatile("movl %%eax, %%ebp" :: "a"(stack_addr));
-  __asm__ volatile("movl %ebp, %esp");
-  kprintf("debug ebp=%x esp=%x\n", ebp(), esp());
-  hang();
-}
-
 void kernel_main()
 {
   kprintf("I am in kernel! ebp=%x esp=%x\n", ebp(), esp());
@@ -183,7 +173,7 @@ void startothers(void)
     *(void**)(code-4) = stack;
     *(void(**)(void))(code-8) = mpenter;
 
-    lapicstartap(c->apicid, code);
+    lapicstartap(c->apicid, (unsigned int)code);
 
     kprintf("wait for start cpu %d %x %x\n", c->apicid, stack, code);
     // wait for cpu to finish start

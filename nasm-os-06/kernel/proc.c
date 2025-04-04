@@ -1,6 +1,7 @@
-#include "proc.h"
-#include "../libc/kprint.h"
-#include "../cpu/x86.h"
+#include "libc/kprint.h"
+#include "cpu/x86.h"
+#include "kernel/lapic.h"
+#include "kernel/proc.h"
 #include <stddef.h>
 
 // Must be called with interrupts disabled to avoid the caller being

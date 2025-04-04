@@ -1,6 +1,7 @@
-#include "lapic.h"
-#include "../cpu/ports.h"
-#include "../cpu/isr.h"
+#include "kernel/lapic.h"
+#include "libc/kprint.h"
+#include "cpu/ports.h"
+#include "cpu/x86.h"
 
 
 // Local APIC registers, divided by 4 for use as uint[] indices.
@@ -109,6 +110,7 @@ lapiceoi(void)
 void
 microdelay(int us)
 {
+  UNUSED(us);
 }
 
 #define CMOS_PORT    0x70

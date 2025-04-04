@@ -1,9 +1,9 @@
 #include "cpu/isr.h"
 #include "drivers/screen.h"
+#include "drivers/hd.h"
 #include "kernel/kernel.h"
 #include "libc/string.h"
 #include "libc/mem.h"
-#include "drivers/hd.h"
 
 #include <stdint.h>
 
@@ -39,13 +39,11 @@ void* hd_setup(void* addr)
   return addr;
 }
 
-void kernel_main() {
+void kernel_main()
+{
   kprint("I am in kernel!\n");
   isr_install();
   irq_install();
-
-  asm("int $2");
-  asm("int $3");
 
   hd_setup((void*)(SYSTEM_PARAM_ADDR));
 }
@@ -59,8 +57,7 @@ void print_hd()
   char sector_bytes_str[10];
   char nsectors_str[20];
   kprint("hd cyl head sector sector_bytes nsectors\n");
-  for (int i = 0; i < hd_num; i++)
-  {
+  for (int i = 0; i < hd_num; i++) {
   	int_to_ascii(i, hd_id_str);
   	kprint(hd_id_str);
   	kprint(" ");
